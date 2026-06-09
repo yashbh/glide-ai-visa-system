@@ -5,7 +5,7 @@ import { TypingIndicator } from "../components/chat/typing-indicator";
 import { DocPanel } from "../components/chat/doc-panel";
 import { Topbar } from "../components/layout/topbar";
 import { useChat } from "../hooks/use-chat";
-import { useDocuments } from "../hooks/use-documents";
+import { useDocuments, detectDocType, detectTravelerName } from "../hooks/use-documents";
 import { useAuth } from "../hooks/use-auth";
 import { generateDocument } from "../lib/api";
 
@@ -37,6 +37,32 @@ function detectDocRequest(message: string): { type: "cover_letter" | "itinerary"
     }
   }
   return null;
+}
+
+// Extract traveler names mentioned in conversation (from AI messages that confirm names)
+function extractTravelerNames(messages: { role: string; content: string }[]): string[] {
+  const names: string[] = [];
+
+  for (const msg of messages) {
+    if (msg.role === "user") {
+      // Look for patterns like "I'm traveling with Priya and Ravi"
+      const withMatch = msg.content.match(/(?:with|and)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/g);
+      if (withMatch) {
+        for (const match of withMatch) {
+          const name = match.replace(/^(?:with|and)\s+/, "").trim();
+          if (name.length > 1 && name.length < 30 && !names.includes(name)) {
+            names.push(name);
+          }
+        }
+      }
+      // Look for "my name is X" or "I'm X"
+      const selfMatch = msg.content.match(/(?:my name is|I'm|I am)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i);
+      if (selfMatch && selfMatch[1] && !names.includes(selfMatch[1])) {
+        names.push(selfMatch[1]);
+      }
+    }
+  }
+  return names;
 }
 
 interface ChatPageProps {
@@ -83,18 +109,42 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
     if (!hasContent) return;
     setInput("");
 
-    // If there's an attached file, upload it and include in message
+    // If there's an attached file, detect doc type + traveler from message, then upload
     if (attachedFile) {
-      const { document: doc, error } = await uploadDocument(attachedFile, conversationId);
+      // Detect document type from message or filename
+      const docType = detectDocType(trimmed) || detectDocType(attachedFile.name);
+
+      // Try to detect whose document this is from the message
+      // Extract known traveler names from conversation history
+      const knownNames = extractTravelerNames(messages);
+      const detectedTraveler = trimmed ? detectTravelerName(trimmed, knownNames) : null;
+
+      // Resolve traveler name
+      let travelerName: string | undefined;
+      if (detectedTraveler === "__self__") {
+        travelerName = user?.email?.split("@")[0] || "Self";
+      } else if (detectedTraveler === "__spouse__" || detectedTraveler === "__child__") {
+        travelerName = undefined; // LLM will ask
+      } else if (detectedTraveler) {
+        travelerName = detectedTraveler;
+      }
+
+      const { document: doc, error } = await uploadDocument(attachedFile, conversationId, {
+        travelerName,
+        docType: docType || undefined,
+      });
+
       if (error) {
         sendMessage(`[Upload failed: ${error}]`);
         return;
       }
       if (doc) {
         const sizeKB = (doc.file_size / 1024).toFixed(0);
+        const docLabel = docType || doc.title;
+        const ownerLabel = travelerName ? ` (${travelerName}'s)` : "";
         const fileMsg = trimmed
-          ? `${trimmed}\n\n[Attached: ${doc.title} — ${doc.file_type}, ${sizeKB}KB]`
-          : `I've uploaded a document: ${doc.title} (${doc.file_type}, ${sizeKB}KB)`;
+          ? `${trimmed}\n\n[Attached: ${docLabel}${ownerLabel} — ${doc.file_type}, ${sizeKB}KB]`
+          : `I've uploaded a document: ${docLabel}${ownerLabel} (${doc.file_type}, ${sizeKB}KB)`;
         sendMessage(fileMsg);
       }
       return;
