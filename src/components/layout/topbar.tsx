@@ -57,7 +57,7 @@ export function Topbar({ title, subtitle, messages, onDelete }: TopbarProps) {
 
   return (
     <header className="flex items-center gap-2.5 h-14 px-5 border-b border-slate-200 flex-none">
-      <span className="text-[15px] text-slate-400 flex items-center gap-1.5">
+      <span className="text-[15px] leading-5 text-slate-400 flex items-center gap-1.5">
         <span>Travel</span>
         <i className="ri-arrow-right-s-line text-lg" />
         <b className="text-slate-950 font-semibold">{title}</b>

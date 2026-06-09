@@ -168,7 +168,7 @@ export function Composer({ value, onChange, onSend, onFileAttach, placeholder = 
           placeholder={isListening ? "Listening... speak now" : placeholder}
           disabled={disabled}
           rows={1}
-          className="w-full box-border border-none outline-none resize-none bg-transparent text-base leading-6 tracking-tight text-slate-950 placeholder:text-slate-400 max-h-[120px]"
+          className="w-full box-border border-none outline-none resize-none bg-transparent text-base leading-6 tracking-[-0.011em] text-slate-950 placeholder:text-slate-400 max-h-[120px]"
         />
         <div className="flex items-center gap-2 mt-2">
           <input

@@ -13,7 +13,7 @@ export function LoginPage() {
         <div className="absolute -right-[120px] -bottom-[120px] w-[380px] h-[380px] rounded-full bg-white/[0.06]" />
 
         <div>
-          <blockquote className="font-display font-medium text-[28px] leading-10 tracking-tight max-w-[460px]">
+          <blockquote className="font-display font-medium text-[28px] leading-10 tracking-[-0.01em] max-w-[460px]">
             "Glide handled my Schengen application in 20 minutes — I spent more time picking my hotel."
           </blockquote>
           <p className="text-[15px] leading-[22px] opacity-80 mt-4">
@@ -22,15 +22,15 @@ export function LoginPage() {
         </div>
 
         <div className="flex gap-5">
-          <div className="flex items-center gap-2 text-[13px] opacity-90">
+          <div className="flex items-center gap-2 text-[13px] leading-[18px] opacity-90">
             <i className="ri-shield-check-line text-lg" />
             Bank-grade encryption
           </div>
-          <div className="flex items-center gap-2 text-[13px] opacity-90">
+          <div className="flex items-center gap-2 text-[13px] leading-[18px] opacity-90">
             <i className="ri-time-line text-lg" />
             90% faster prep
           </div>
-          <div className="flex items-center gap-2 text-[13px] opacity-90">
+          <div className="flex items-center gap-2 text-[13px] leading-[18px] opacity-90">
             <i className="ri-check-double-line text-lg" />
             98% approval rate
           </div>

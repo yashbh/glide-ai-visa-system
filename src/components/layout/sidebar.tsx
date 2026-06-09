@@ -22,7 +22,7 @@ export function Sidebar({ currentView, activeConversationId, conversations, onNa
   const { user, signOut } = useAuth();
 
   return (
-    <aside className="w-[272px] bg-white border-r border-slate-200 flex flex-col p-5 pb-3.5 gap-4 min-h-0">
+    <aside className="w-[272px] bg-white border-r border-slate-200 flex flex-col py-5 px-3.5 pb-3.5 gap-4 min-h-0">
       {/* Top: logo + collapse */}
       <div className="flex items-center justify-between px-1.5">
         <div className="flex items-center gap-2.5">
@@ -53,7 +53,7 @@ export function Sidebar({ currentView, activeConversationId, conversations, onNa
           <button
             key={item.id}
             onClick={() => onNavigate(item.id)}
-            className={`flex items-center gap-3 h-10 px-3 rounded-[8px] border-none w-full text-left cursor-pointer text-sm font-medium tracking-tight transition-colors ${
+            className={`flex items-center gap-3 h-10 px-3 rounded-[8px] border-none w-full text-left cursor-pointer text-sm font-medium tracking-[-0.006em] transition-colors ${
               currentView === item.id && !(currentView === "home" && activeConversationId)
                 ? "bg-slate-50 text-slate-950"
                 : `bg-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-950 ${item.className || ""}`
@@ -70,7 +70,7 @@ export function Sidebar({ currentView, activeConversationId, conversations, onNa
 
       {/* Recent chats */}
       <div className="flex flex-col gap-0.5 flex-1 min-h-0 overflow-y-auto">
-        <span className="text-xs font-medium text-slate-400 tracking-wide px-3 pt-2 pb-0.5">
+        <span className="text-xs font-medium text-slate-400 tracking-[0.02em] px-3 pt-2 pb-0.5">
           RECENT
         </span>
         {conversations.length === 0 && (
@@ -79,7 +79,7 @@ export function Sidebar({ currentView, activeConversationId, conversations, onNa
         {conversations.map((conv) => (
           <div
             key={conv.id}
-            className={`group flex items-center gap-2 h-9 px-3 rounded-[8px] cursor-pointer text-sm transition-colors ${
+            className={`group flex items-center gap-2 h-9 px-3 rounded-[8px] cursor-pointer text-sm leading-5 transition-colors ${
               activeConversationId === conv.id
                 ? "bg-slate-50 text-slate-950 font-medium"
                 : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
@@ -99,13 +99,13 @@ export function Sidebar({ currentView, activeConversationId, conversations, onNa
       </div>
 
       {/* User */}
-      <div className="mt-auto flex items-center gap-2.5 px-2 pt-2.5 border-t border-slate-200">
+      <div className="mt-auto flex items-center gap-2.5 py-2.5 px-2 border-t border-slate-200">
         <div className="w-8 h-8 rounded-full bg-slate-200 grid place-items-center text-sm font-medium text-slate-600">
           {user?.email?.[0]?.toUpperCase() || "U"}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium truncate">{user?.email?.split("@")[0] || "User"}</div>
-          <div className="text-xs text-slate-400 truncate">{user?.email || ""}</div>
+          <div className="text-sm font-medium leading-[18px] truncate">{user?.email?.split("@")[0] || "User"}</div>
+          <div className="text-xs leading-4 text-slate-400 truncate">{user?.email || ""}</div>
         </div>
         <button onClick={signOut} className="text-slate-400 hover:text-slate-600 text-lg cursor-pointer bg-transparent border-none">
           <i className="ri-logout-box-r-line" />
