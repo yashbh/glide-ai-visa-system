@@ -140,6 +140,13 @@ export function Composer({ value, onChange, onSend, onFileAttach, placeholder = 
 
   return (
     <div className="max-w-[760px] mx-auto w-full px-6 pb-3.5 pt-2 box-border">
+      {/* Upsell bar */}
+      <div className="flex items-center gap-1.5 px-3.5 py-2 text-[13px] text-slate-400 bg-slate-50 rounded-t-[14px] border border-slate-200 border-b-0 translate-y-[8px]">
+        <i className="ri-flashlight-line text-yellow-500 text-sm" />
+        <span>Access premium models & features</span>
+        <span className="text-slate-400 mx-0.5">·</span>
+        <b className="text-slate-950 ml-auto cursor-pointer hover:text-blue-500">Upgrade</b>
+      </div>
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}

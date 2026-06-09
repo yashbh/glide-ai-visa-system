@@ -9,7 +9,7 @@ interface MessageProps {
 export const Message = memo(function Message({ message }: MessageProps) {
   if (message.role === "user") {
     return (
-      <div className="self-end max-w-[78%] bg-blue-500/10 text-blue-700 rounded-[20px] px-[18px] py-3 text-base leading-6 tracking-[-0.011em]">
+      <div className="self-end max-w-[78%] bg-slate-900 text-white rounded-[20px] px-[18px] py-3 text-[15px] leading-6 tracking-[-0.011em]">
         {message.content}
       </div>
     );
@@ -17,7 +17,7 @@ export const Message = memo(function Message({ message }: MessageProps) {
 
   return (
     <div className="self-start max-w-[92%] flex flex-col gap-2.5">
-      <div className="prose prose-sm max-w-none text-base leading-[26px] tracking-[-0.011em] text-slate-950 prose-headings:font-display prose-headings:text-slate-950 prose-headings:mt-4 prose-headings:mb-2 prose-p:my-1.5 prose-ul:my-1.5 prose-li:my-0.5 prose-strong:text-slate-950">
+      <div className="prose prose-sm max-w-none text-[15px] leading-[26px] tracking-[-0.011em] text-slate-950 prose-headings:font-display prose-headings:text-slate-950 prose-headings:mt-4 prose-headings:mb-2 prose-p:my-1.5 prose-ul:my-1.5 prose-li:my-0.5 prose-strong:text-slate-950">
         <Markdown>{message.content}</Markdown>
       </div>
       <div className="flex gap-0.5">
