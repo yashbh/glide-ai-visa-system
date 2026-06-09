@@ -6,7 +6,8 @@
       "Bash(npm config *)",
       "Bash(npm --version)",
       "Read(//Users/yashbhati/.nvm/versions/node/**)",
-      "Bash(brew list *)"
+      "Bash(brew list *)",
+      "mcp__Claude_in_Chrome__computer"
     ]
   }
 }
