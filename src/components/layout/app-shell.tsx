@@ -46,8 +46,7 @@ export function AppShell() {
   }
 
   return (
-    <div className="h-screen p-2.5 bg-slate-100">
-      <div className="h-full grid grid-cols-[272px_1fr] bg-white text-slate-950 overflow-hidden rounded-xl shadow-regular-lg">
+    <div className="h-screen grid grid-cols-[272px_1fr] bg-white text-slate-950 overflow-hidden">
       <Sidebar
         currentView={view}
         activeConversationId={activeConversationId}
@@ -62,7 +61,7 @@ export function AppShell() {
           }
         }}
       />
-      <main className="flex flex-col min-w-0 min-h-0">
+      <main className="flex flex-col min-w-0 min-h-0 m-2 ml-0 rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden">
         {showTopbar && <Topbar title="New chat" />}
         {view === "home" && <ChatHomePage onStartChat={startNewChat} />}
         {view === "chat" && activeConversationId && (
@@ -91,7 +90,6 @@ export function AppShell() {
           </div>
         )}
       </main>
-      </div>
     </div>
   );
 }

@@ -6,9 +6,10 @@ interface TopbarProps {
   subtitle?: string;
   messages?: Message[];
   onDelete?: () => void;
+  transparent?: boolean;
 }
 
-export function Topbar({ title, subtitle, messages, onDelete }: TopbarProps) {
+export function Topbar({ title, subtitle, messages, onDelete, transparent }: TopbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -56,7 +57,11 @@ export function Topbar({ title, subtitle, messages, onDelete }: TopbarProps) {
   }
 
   return (
-    <header className="flex items-center gap-2.5 h-14 px-5 border-b border-slate-200 flex-none">
+    <header className={`flex items-center gap-2.5 h-14 px-5 flex-none ${
+      transparent
+        ? "bg-white/70 backdrop-blur-md border-b border-slate-200/50"
+        : "border-b border-slate-200 bg-white"
+    }`}>
       <span className="text-[15px] leading-5 text-slate-400 flex items-center gap-1.5">
         <span>Travel</span>
         <i className="ri-arrow-right-s-line text-lg" />
