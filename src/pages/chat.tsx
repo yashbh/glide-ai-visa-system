@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Composer } from "../components/chat/composer";
 import type { AttachmentMeta } from "../components/chat/composer";
 import { Message } from "../components/chat/message";
 import { TypingIndicator } from "../components/chat/typing-indicator";
 import { DocPanel } from "../components/chat/doc-panel";
+import { TravelerForm } from "../components/chat/traveler-form";
 import { Topbar } from "../components/layout/topbar";
 import { useChat } from "../hooks/use-chat";
 import { useDocuments } from "../hooks/use-documents";
@@ -77,6 +78,8 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
   const [input, setInput] = useState("");
   const [docPanel, setDocPanel] = useState<{ title: string; body: string } | null>(null);
   const [isDocGenerating, setIsDocGenerating] = useState(false);
+  const [travelers, setTravelers] = useState<string[]>([]);
+  const [showTravelerForm, setShowTravelerForm] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasSentInitial = useRef(false);
 
@@ -89,18 +92,46 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
     }
   }, [messages, isLoading]);
 
+  // Show traveler form for new conversations, or start chat for existing ones
   useEffect(() => {
     if (!historyLoaded || hasSentInitial.current) return;
     if (isNew && messages.length === 0) {
-      hasSentInitial.current = true;
-      sendMessage(`Hi! I'm interested in traveling to ${country}.`).then(() => {
-        onConversationCreated();
-      });
+      setShowTravelerForm(true);
+    } else if (!isNew) {
+      // For existing conversations, extract names from history
+      const names = extractTravelerNames(messages);
+      if (names.length > 0) setTravelers(names);
     }
-  }, [historyLoaded, isNew, messages.length, country, sendMessage, onConversationCreated]);
+  }, [historyLoaded, isNew, messages.length]);
 
-  // Extract known traveler names from conversation for the dropdown
-  const travelers = useMemo(() => extractTravelerNames(messages), [messages]);
+  const handleTravelerSubmit = useCallback(async (travelerList: { name: string; relationship: string }[]) => {
+    setShowTravelerForm(false);
+    const names = travelerList.map((t) => t.name.trim());
+    setTravelers(names);
+    hasSentInitial.current = true;
+
+    // Store travelers in Supabase
+    if (user) {
+      const { supabase } = await import("../lib/supabase");
+      for (const t of travelerList) {
+        await supabase.from("travelers").insert({
+          user_id: user.id,
+          conversation_id: conversationId,
+          name: t.name.trim(),
+          relationship: t.relationship,
+        });
+      }
+    }
+
+    // Start conversation with traveler info
+    const travelerInfo = travelerList.length === 1
+      ? `Hi! My name is ${travelerList[0].name} and I'm interested in traveling to ${country}.`
+      : `Hi! I'm ${travelerList[0].name} and I'm traveling to ${country} with ${travelerList.slice(1).map((t) => `${t.name} (${t.relationship})`).join(", ")}.`;
+
+    sendMessage(travelerInfo).then(() => {
+      onConversationCreated();
+    });
+  }, [user, conversationId, country, sendMessage, onConversationCreated]);
 
   const handleSend = useCallback(async (attachment?: AttachmentMeta) => {
     const trimmed = input.trim();
@@ -208,6 +239,10 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
         <div className="text-slate-400 text-sm">Loading conversation...</div>
       </div>
     );
+  }
+
+  if (showTravelerForm) {
+    return <TravelerForm country={country} onSubmit={handleTravelerSubmit} />;
   }
 
   return (
