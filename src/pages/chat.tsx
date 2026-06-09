@@ -77,25 +77,40 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
     }
   }, [historyLoaded, isNew, messages.length, country, sendMessage, onConversationCreated]);
 
-  const handleSend = useCallback(async () => {
+  const handleSend = useCallback(async (attachedFile?: File) => {
     const trimmed = input.trim();
-    if (!trimmed) return;
+    const hasContent = trimmed.length > 0 || attachedFile;
+    if (!hasContent) return;
     setInput("");
+
+    // If there's an attached file, upload it and include in message
+    if (attachedFile) {
+      const { document: doc, error } = await uploadDocument(attachedFile, conversationId);
+      if (error) {
+        sendMessage(`[Upload failed: ${error}]`);
+        return;
+      }
+      if (doc) {
+        const sizeKB = (doc.file_size / 1024).toFixed(0);
+        const fileMsg = trimmed
+          ? `${trimmed}\n\n[Attached: ${doc.title} — ${doc.file_type}, ${sizeKB}KB]`
+          : `I've uploaded a document: ${doc.title} (${doc.file_type}, ${sizeKB}KB)`;
+        sendMessage(fileMsg);
+      }
+      return;
+    }
 
     // Check if user is asking for a document
     const docRequest = detectDocRequest(trimmed);
     if (docRequest) {
-      // Send the user's message to chat normally
       await sendMessage(trimmed);
 
-      // Build context from conversation history for the document
       const conversationContext = messages
         .filter((m) => m.role !== "system")
         .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
         .slice(-10)
         .join("\n");
 
-      // Open panel with loading state
       const docTitle = docRequest.type === "cover_letter"
         ? `${country.charAt(0).toUpperCase() + country.slice(1)} Cover Letter`
         : `${country.charAt(0).toUpperCase() + country.slice(1)} Travel Itinerary`;
@@ -103,7 +118,6 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
       setDocPanel({ title: docTitle, body: "" });
       setIsDocGenerating(true);
 
-      // Call dedicated document generation endpoint
       const result = await generateDocument({
         doc_type: docRequest.type,
         country,
@@ -123,19 +137,7 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
 
     // Normal message
     sendMessage(trimmed);
-  }, [input, sendMessage, messages, country]);
-
-  const handleFileAttach = useCallback(async (file: File) => {
-    const { document: doc, error } = await uploadDocument(file, conversationId);
-    if (error) {
-      sendMessage(`[Upload failed: ${error}]`);
-      return;
-    }
-    if (doc) {
-      const sizeKB = (doc.file_size / 1024).toFixed(0);
-      sendMessage(`I've uploaded my document: ${doc.title} (${doc.file_type}, ${sizeKB}KB)`);
-    }
-  }, [uploadDocument, conversationId, sendMessage]);
+  }, [input, sendMessage, messages, country, uploadDocument, conversationId]);
 
   const handleDocApprove = useCallback(async (editedContent: string) => {
     if (!docPanel || !user) return;
@@ -198,7 +200,6 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
             value={input}
             onChange={setInput}
             onSend={handleSend}
-            onFileAttach={handleFileAttach}
             placeholder="Reply to Glide..."
             disabled={isLoading || isUploading || isDocGenerating}
           />

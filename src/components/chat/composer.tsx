@@ -4,17 +4,18 @@ import { validateFile } from "../../hooks/use-documents";
 interface ComposerProps {
   value: string;
   onChange: (value: string) => void;
-  onSend: () => void;
-  onFileAttach?: (file: File) => void;
+  onSend: (attachedFile?: File) => void;
   placeholder?: string;
   disabled?: boolean;
 }
 
-export function Composer({ value, onChange, onSend, onFileAttach, placeholder = "Ask Glide anything...", disabled }: ComposerProps) {
+export function Composer({ value, onChange, onSend, placeholder = "Ask Glide anything...", disabled }: ComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isListening, setIsListening] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
@@ -25,6 +26,20 @@ export function Composer({ value, onChange, onSend, onFileAttach, placeholder = 
     }
   }, [value]);
 
+  // Generate preview URL for images
+  useEffect(() => {
+    if (!attachedFile) {
+      setFilePreview(null);
+      return;
+    }
+    if (attachedFile.type.startsWith("image/")) {
+      const url = URL.createObjectURL(attachedFile);
+      setFilePreview(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setFilePreview(null);
+  }, [attachedFile]);
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -34,19 +49,26 @@ export function Composer({ value, onChange, onSend, onFileAttach, placeholder = 
 
   function handleSend() {
     stopListening();
-    onSend();
+    const hasContent = value.trim().length > 0 || attachedFile;
+    if (!hasContent) return;
+    onSend(attachedFile || undefined);
+    setAttachedFile(null);
+    setFilePreview(null);
   }
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !onFileAttach) return;
-
+  function attachFile(file: File) {
     const error = validateFile(file);
     if (error) {
       alert(error);
       return;
     }
-    onFileAttach(file);
+    setAttachedFile(file);
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    attachFile(file);
     e.target.value = "";
   }
 
@@ -54,14 +76,8 @@ export function Composer({ value, onChange, onSend, onFileAttach, placeholder = 
     e.preventDefault();
     setIsDragOver(false);
     const file = e.dataTransfer.files?.[0];
-    if (!file || !onFileAttach) return;
-
-    const error = validateFile(file);
-    if (error) {
-      alert(error);
-      return;
-    }
-    onFileAttach(file);
+    if (!file) return;
+    attachFile(file);
   }
 
   function handleDragOver(e: React.DragEvent) {
@@ -72,6 +88,11 @@ export function Composer({ value, onChange, onSend, onFileAttach, placeholder = 
   function handleDragLeave(e: React.DragEvent) {
     e.preventDefault();
     setIsDragOver(false);
+  }
+
+  function removeAttachment() {
+    setAttachedFile(null);
+    setFilePreview(null);
   }
 
   const startListening = useCallback(() => {
@@ -136,7 +157,7 @@ export function Composer({ value, onChange, onSend, onFileAttach, placeholder = 
     }
   }
 
-  const hasContent = value.trim().length > 0;
+  const hasContent = value.trim().length > 0 || attachedFile !== null;
 
   return (
     <div className="max-w-[760px] mx-auto w-full px-6 pb-3.5 pt-2 box-border">
@@ -147,6 +168,7 @@ export function Composer({ value, onChange, onSend, onFileAttach, placeholder = 
         <span className="text-slate-400 mx-0.5">·</span>
         <b className="text-slate-950 ml-auto cursor-pointer hover:text-blue-500">Upgrade</b>
       </div>
+
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -167,12 +189,38 @@ export function Composer({ value, onChange, onSend, onFileAttach, placeholder = 
             </div>
           </div>
         )}
+
+        {/* Attachment preview */}
+        {attachedFile && (
+          <div className="mb-2.5 flex items-start gap-2">
+            <div className="relative inline-block">
+              {filePreview ? (
+                <img src={filePreview} alt={attachedFile.name} className="h-16 w-16 object-cover rounded-[10px] border border-slate-200" />
+              ) : (
+                <div className="h-16 w-16 rounded-[10px] border border-slate-200 bg-red-50 grid place-items-center">
+                  <i className="ri-file-pdf-2-line text-2xl text-red-500" />
+                </div>
+              )}
+              <button
+                onClick={removeAttachment}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-900 text-white grid place-items-center text-xs cursor-pointer border-2 border-white"
+              >
+                <i className="ri-close-line" />
+              </button>
+            </div>
+            <div className="flex flex-col justify-center min-w-0 pt-1">
+              <span className="text-sm font-medium text-slate-700 truncate">{attachedFile.name}</span>
+              <span className="text-xs text-slate-400">{(attachedFile.size / 1024).toFixed(0)} KB</span>
+            </div>
+          </div>
+        )}
+
         <textarea
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={isListening ? "Listening... speak now" : placeholder}
+          placeholder={isListening ? "Listening... speak now" : attachedFile ? "Add a message about this file..." : placeholder}
           disabled={disabled}
           rows={1}
           className="w-full box-border border-none outline-none resize-none bg-transparent text-base leading-6 tracking-[-0.011em] text-slate-950 placeholder:text-slate-400 max-h-[120px]"
