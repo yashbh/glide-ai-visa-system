@@ -14,3 +14,8 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+@keyframes slideIn {
+  from { width: 0; opacity: 0; }
+  to { width: 520px; opacity: 1; }
+}
