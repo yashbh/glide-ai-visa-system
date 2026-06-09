@@ -151,7 +151,7 @@ BOUNDARIES:
       ...(history || []).map((m: any) => ({ role: m.role as string, content: m.content })),
     ];
 
-    // Call OpenAI
+    // Call OpenAI with streaming
     const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -163,6 +163,7 @@ BOUNDARIES:
         messages: openaiMessages,
         temperature: 0.7,
         max_tokens: 800,
+        stream: true,
       }),
     });
 
@@ -174,18 +175,63 @@ BOUNDARIES:
       });
     }
 
-    const openaiData = await openaiResponse.json();
-    const reply = openaiData.choices[0]?.message?.content || "I'm sorry, I couldn't generate a response.";
+    // Stream the response to the client while collecting the full text
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+    let fullReply = "";
 
-    // Store assistant response
-    await supabase.from("messages").insert({
-      conversation_id,
-      role: "assistant",
-      content: reply,
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = openaiResponse.body!.getReader();
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split("\n").filter((line) => line.startsWith("data: "));
+
+            for (const line of lines) {
+              const data = line.slice(6);
+              if (data === "[DONE]") continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices[0]?.delta?.content || "";
+                if (content) {
+                  fullReply += content;
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
+                }
+              } catch {
+                // skip malformed chunks
+              }
+            }
+          }
+
+          // Store the complete assistant response
+          await supabase.from("messages").insert({
+            conversation_id,
+            role: "assistant",
+            content: fullReply,
+          });
+
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        } catch (err: any) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: err.message })}\n\n`));
+          controller.close();
+        }
+      },
     });
 
-    return new Response(JSON.stringify({ reply }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
     });
   } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message }), {
