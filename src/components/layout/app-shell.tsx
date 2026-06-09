@@ -46,8 +46,8 @@ export function AppShell() {
   }
 
   return (
-    <div className="h-screen p-3 bg-slate-100">
-      <div className="h-full grid grid-cols-[272px_1fr] bg-white text-slate-950 overflow-hidden rounded-2xl border border-slate-200 shadow-regular-lg">
+    <div className="h-screen p-2.5 bg-slate-100">
+      <div className="h-full grid grid-cols-[272px_1fr] bg-white text-slate-950 overflow-hidden rounded-xl shadow-regular-lg">
       <Sidebar
         currentView={view}
         activeConversationId={activeConversationId}
