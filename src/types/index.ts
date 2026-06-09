@@ -52,6 +52,8 @@ export interface Document {
   id: string;
   user_id: string;
   conversation_id: string | null;
+  traveler_id: string | null;
+  traveler_name: string | null;
   country: string;
   title: string;
   file_name: string;
@@ -59,5 +61,16 @@ export interface Document {
   file_size: number;
   storage_path: string;
   status: "uploaded" | "verified" | "rejected" | "processing";
+  created_at: string;
+}
+
+export interface Traveler {
+  id: string;
+  user_id: string;
+  conversation_id: string | null;
+  name: string;
+  relationship: "self" | "spouse" | "child" | "parent" | "sibling" | "other";
+  passport_number: string | null;
+  date_of_birth: string | null;
   created_at: string;
 }
