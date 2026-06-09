@@ -17,10 +17,18 @@ const COUNTRY_FLAGS: Record<string, string> = {
   india: "🇮🇳",
 };
 
+const FILE_ICONS: Record<string, string> = {
+  "application/pdf": "ri-file-pdf-2-line",
+  "text/plain": "ri-file-text-line",
+  "image/jpeg": "ri-image-line",
+  "image/png": "ri-image-line",
+};
+
 const DocumentCard = memo(function DocumentCard({ doc, onDelete }: { doc: Document; onDelete: (doc: Document) => void }) {
   const status = STATUS_CONFIG[doc.status] || STATUS_CONFIG.uploaded;
   const flag = COUNTRY_FLAGS[doc.country] || "📄";
   const isImage = doc.file_type.startsWith("image/");
+  const fileIcon = FILE_ICONS[doc.file_type] || "ri-file-line";
 
   const thumbnailUrl = isImage
     ? supabase.storage.from("documents").getPublicUrl(doc.storage_path).data.publicUrl
@@ -33,7 +41,7 @@ const DocumentCard = memo(function DocumentCard({ doc, onDelete }: { doc: Docume
           <img src={thumbnailUrl} alt={doc.title} className="max-h-[138px] rounded-[6px] shadow-regular-sm object-contain" />
         ) : (
           <div className="flex flex-col items-center gap-2 text-slate-300">
-            <i className="ri-file-pdf-2-line text-5xl" />
+            <i className={`${fileIcon} text-5xl`} />
             <span className="text-xs text-slate-400">{doc.file_name}</span>
           </div>
         )}

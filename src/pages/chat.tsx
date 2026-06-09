@@ -65,14 +65,27 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
     }
   }, [messages, isLoading]);
 
-  // Detect document in the latest message
+  // Detect document in the latest message (works during streaming too)
+  const isDocGenerating = useMemo(() => {
+    if (messages.length === 0) return false;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg.role !== "assistant") return false;
+    return lastMsg.content.includes(DOC_START) && !lastMsg.content.includes(DOC_END);
+  }, [messages]);
+
   useEffect(() => {
     if (messages.length === 0) return;
     const lastMsg = messages[messages.length - 1];
     if (lastMsg.role !== "assistant") return;
 
+    // Open panel as soon as we detect document start (even before it's complete)
+    if (lastMsg.content.includes(DOC_START) && !docPanel) {
+      const titleMatch = lastMsg.content.match(/---DOCUMENT_START---\s*\n?TITLE:\s*(.+)/);
+      setDocPanel({ title: titleMatch?.[1]?.trim() || "Generating...", body: "" });
+    }
+
     const doc = extractDocument(lastMsg.content);
-    if (doc && (!docPanel || doc.title !== docPanel.title || doc.body !== docPanel.body)) {
+    if (doc) {
       setDocPanel(doc);
     }
   }, [messages]);
@@ -183,6 +196,7 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
           <DocPanel
             title={docPanel.title}
             content={docPanel.body}
+            isGenerating={isDocGenerating}
             isOpen={true}
             onClose={() => setDocPanel(null)}
             onApprove={handleDocApprove}
