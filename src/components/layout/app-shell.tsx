@@ -35,10 +35,15 @@ export function AppShell() {
     setView(v);
   }
 
-  const showTopbar = view === "home" || view === "chat";
-  const topbarTitle = view === "chat"
-    ? conversations.find((c) => c.id === activeConversationId)?.title || `Travel to ${chatCountry.charAt(0).toUpperCase() + chatCountry.slice(1)}`
-    : "New chat";
+  const showTopbar = view === "home";
+  const chatTitle = conversations.find((c) => c.id === activeConversationId)?.title || `Travel to ${chatCountry.charAt(0).toUpperCase() + chatCountry.slice(1)}`;
+
+  async function handleDeleteActive() {
+    if (!activeConversationId) return;
+    await deleteConversation(activeConversationId);
+    setActiveConversationId(null);
+    setView("home");
+  }
 
   return (
     <div className="h-screen grid grid-cols-[272px_1fr] bg-white text-slate-950 overflow-hidden">
@@ -57,15 +62,17 @@ export function AppShell() {
         }}
       />
       <main className="flex flex-col min-w-0 min-h-0">
-        {showTopbar && <Topbar title={topbarTitle} />}
+        {showTopbar && <Topbar title="New chat" />}
         {view === "home" && <ChatHomePage onStartChat={startNewChat} />}
         {view === "chat" && activeConversationId && (
           <ChatPage
             key={activeConversationId}
             conversationId={activeConversationId}
             country={chatCountry}
+            title={chatTitle}
             isNew={!conversations.some((c) => c.id === activeConversationId)}
             onConversationCreated={refreshConversations}
+            onDelete={handleDeleteActive}
           />
         )}
         {view === "documents" && <DocumentsPage />}

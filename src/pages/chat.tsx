@@ -2,16 +2,19 @@ import { useState, useRef, useEffect } from "react";
 import { Composer } from "../components/chat/composer";
 import { Message } from "../components/chat/message";
 import { TypingIndicator } from "../components/chat/typing-indicator";
+import { Topbar } from "../components/layout/topbar";
 import { useChat } from "../hooks/use-chat";
 
 interface ChatPageProps {
   conversationId: string;
   country: string;
+  title: string;
   isNew: boolean;
   onConversationCreated: () => void;
+  onDelete: () => void;
 }
 
-export function ChatPage({ conversationId, country, isNew, onConversationCreated }: ChatPageProps) {
+export function ChatPage({ conversationId, country, title, isNew, onConversationCreated, onDelete }: ChatPageProps) {
   const { messages, isLoading, historyLoaded, sendMessage } = useChat(conversationId);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -52,22 +55,25 @@ export function ChatPage({ conversationId, country, isNew, onConversationCreated
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
-      <div className="flex-1 overflow-y-auto" ref={scrollRef}>
-        <div className="max-w-[760px] mx-auto px-6 py-7 flex flex-col gap-[22px]">
-          {messages.map((msg) => (
-            <Message key={msg.id} message={msg} />
-          ))}
-          {isLoading && <TypingIndicator />}
+    <>
+      <Topbar title={title} messages={messages} onDelete={onDelete} />
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 overflow-y-auto" ref={scrollRef}>
+          <div className="max-w-[760px] mx-auto px-6 py-7 flex flex-col gap-[22px]">
+            {messages.map((msg) => (
+              <Message key={msg.id} message={msg} />
+            ))}
+            {isLoading && <TypingIndicator />}
+          </div>
         </div>
+        <Composer
+          value={input}
+          onChange={setInput}
+          onSend={handleSend}
+          placeholder="Reply to Glide..."
+          disabled={isLoading}
+        />
       </div>
-      <Composer
-        value={input}
-        onChange={setInput}
-        onSend={handleSend}
-        placeholder="Reply to Glide..."
-        disabled={isLoading}
-      />
-    </div>
+    </>
   );
 }
