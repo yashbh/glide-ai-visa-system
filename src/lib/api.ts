@@ -128,3 +128,52 @@ export async function sendChatMessage(
   const data = await response.json();
   return { reply: data.reply, error: undefined };
 }
+
+interface GenerateDocRequest {
+  doc_type: "cover_letter" | "itinerary";
+  country: string;
+  context: string;
+}
+
+interface GenerateDocResponse {
+  title: string;
+  document: string;
+  error?: string;
+}
+
+export async function generateDocument(request: GenerateDocRequest): Promise<GenerateDocResponse> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+  // Mock mode
+  if (!supabaseUrl || supabaseUrl === "https://placeholder.supabase.co") {
+    await new Promise((r) => setTimeout(r, 2000));
+    return {
+      title: `${request.country.charAt(0).toUpperCase() + request.country.slice(1)} Cover Letter`,
+      document: `[Your Address]\n[City, State]\n\nDate: ${new Date().toLocaleDateString()}\n\nThe Visa Officer\nGerman Consulate General\n\nSubject: Application for Schengen Tourist Visa\n\nDear Sir/Madam,\n\nI am writing to apply for a Schengen tourist visa to visit Germany.\n\n[Mock document content - connect Supabase for real generation]\n\nYours sincerely,\n[Your Name]`,
+    };
+  }
+
+  const { supabase } = await import("./supabase");
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    return { title: "", document: "", error: "Not authenticated" };
+  }
+
+  const response = await fetch(`${supabaseUrl}/functions/v1/generate-doc`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    return { title: "", document: "", error: errorText || "Document generation failed" };
+  }
+
+  const data = await response.json();
+  return { title: data.title, document: data.document, error: undefined };
+}
