@@ -22,7 +22,7 @@ export function Sidebar({ currentView, activeConversationId, conversations, onNa
   const { user, signOut } = useAuth();
 
   return (
-    <aside className="w-[272px] bg-white border-r border-slate-200 flex flex-col py-5 px-3.5 pb-3.5 gap-4 min-h-0">
+    <aside className="w-[272px] bg-white flex flex-col py-5 px-3.5 pb-3.5 gap-4 min-h-0">
       {/* Top: logo + collapse */}
       <div className="flex items-center justify-between px-1.5">
         <div className="flex items-center gap-2.5">
