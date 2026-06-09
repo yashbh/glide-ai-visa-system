@@ -5,14 +5,17 @@ import { TypingIndicator } from "../components/chat/typing-indicator";
 import { useChat } from "../hooks/use-chat";
 
 interface ChatPageProps {
+  conversationId: string;
   country: string;
+  isNew: boolean;
+  onConversationCreated: () => void;
 }
 
-export function ChatPage({ country }: ChatPageProps) {
-  const conversationId = useRef(crypto.randomUUID()).current;
-  const { messages, isLoading, sendMessage } = useChat(conversationId);
+export function ChatPage({ conversationId, country, isNew, onConversationCreated }: ChatPageProps) {
+  const { messages, isLoading, historyLoaded, sendMessage } = useChat(conversationId);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const hasSentInitial = useRef(false);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -23,18 +26,29 @@ export function ChatPage({ country }: ChatPageProps) {
     }
   }, [messages, isLoading]);
 
-  const hasSentInitial = useRef(false);
   useEffect(() => {
-    if (hasSentInitial.current) return;
-    hasSentInitial.current = true;
-    sendMessage(`I want to travel to ${country}. Can you help me with the visa process?`);
-  }, []);
+    if (!historyLoaded || hasSentInitial.current) return;
+    if (isNew && messages.length === 0) {
+      hasSentInitial.current = true;
+      sendMessage(`I want to travel to ${country}. Can you help me with the visa process?`).then(() => {
+        onConversationCreated();
+      });
+    }
+  }, [historyLoaded, isNew, messages.length, country, sendMessage, onConversationCreated]);
 
   function handleSend() {
     const trimmed = input.trim();
     if (!trimmed) return;
     setInput("");
     sendMessage(trimmed);
+  }
+
+  if (!historyLoaded) {
+    return (
+      <div className="flex-1 grid place-items-center">
+        <div className="text-slate-400 text-sm">Loading conversation...</div>
+      </div>
+    );
   }
 
   return (

@@ -1,8 +1,12 @@
 import { useAuth } from "../../hooks/use-auth";
+import type { Conversation } from "../../types";
 
 interface SidebarProps {
   currentView: string;
+  activeConversationId: string | null;
+  conversations: Conversation[];
   onNavigate: (view: string) => void;
+  onOpenConversation: (id: string, title: string) => void;
 }
 
 const NAV_ITEMS = [
@@ -13,12 +17,7 @@ const NAV_ITEMS = [
   { id: "library", icon: "ri-book-open-line", label: "Library" },
 ];
 
-const RECENT_CHATS = [
-  { id: "r1", label: "Travel to Germany" },
-  { id: "r2", label: "Japan visa inquiry" },
-];
-
-export function Sidebar({ currentView, onNavigate }: SidebarProps) {
+export function Sidebar({ currentView, activeConversationId, conversations, onNavigate, onOpenConversation }: SidebarProps) {
   const { user, signOut } = useAuth();
 
   return (
@@ -54,7 +53,7 @@ export function Sidebar({ currentView, onNavigate }: SidebarProps) {
             key={item.id}
             onClick={() => onNavigate(item.id)}
             className={`flex items-center gap-3 h-10 px-3 rounded-[8px] border-none w-full text-left cursor-pointer text-sm font-medium tracking-tight transition-colors ${
-              currentView === item.id
+              currentView === item.id && !(currentView === "home" && activeConversationId)
                 ? "bg-slate-50 text-slate-950"
                 : `bg-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-950 ${item.className || ""}`
             }`}
@@ -73,14 +72,21 @@ export function Sidebar({ currentView, onNavigate }: SidebarProps) {
         <span className="text-xs font-medium text-slate-400 tracking-wide px-3 pt-2 pb-0.5">
           RECENT
         </span>
-        {RECENT_CHATS.map((chat) => (
+        {conversations.length === 0 && (
+          <p className="text-xs text-slate-400 px-3 py-2">No conversations yet</p>
+        )}
+        {conversations.map((conv) => (
           <button
-            key={chat.id}
-            onClick={() => onNavigate("chat")}
-            className="flex items-center gap-2 h-9 px-3 rounded-[8px] border-none bg-transparent w-full text-left cursor-pointer text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+            key={conv.id}
+            onClick={() => onOpenConversation(conv.id, conv.title)}
+            className={`flex items-center gap-2 h-9 px-3 rounded-[8px] border-none w-full text-left cursor-pointer text-sm transition-colors ${
+              activeConversationId === conv.id
+                ? "bg-slate-50 text-slate-950 font-medium"
+                : "bg-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+            }`}
           >
-            <i className="ri-message-3-line text-base" />
-            {chat.label}
+            <i className="ri-message-3-line text-base flex-none" />
+            <span className="truncate">{conv.title}</span>
           </button>
         ))}
       </div>

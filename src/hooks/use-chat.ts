@@ -1,10 +1,31 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { sendChatMessage } from "../lib/api";
+import { supabase } from "../lib/supabase";
 import type { Message } from "../types";
 
 export function useChat(conversationId: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+
+  useEffect(() => {
+    async function loadHistory() {
+      const { data } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+
+      if (data && data.length > 0) {
+        setMessages(data as Message[]);
+      }
+      setHistoryLoaded(true);
+    }
+
+    setMessages([]);
+    setHistoryLoaded(false);
+    loadHistory();
+  }, [conversationId]);
 
   const sendMessage = useCallback(async (content: string) => {
     const userMessage: Message = {
@@ -50,5 +71,5 @@ export function useChat(conversationId: string) {
     setMessages((prev) => [...prev, assistantMessage]);
   }, [conversationId]);
 
-  return { messages, isLoading, sendMessage };
+  return { messages, isLoading, historyLoaded, sendMessage };
 }
