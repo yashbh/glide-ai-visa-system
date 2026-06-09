@@ -6,9 +6,9 @@ interface ChatHomePageProps {
 }
 
 const DESTINATIONS = [
-  { id: "germany", name: "Travel to Germany", flag: "🇩🇪", gradient: "linear-gradient(135deg, #FFD268, #E16614)" },
-  { id: "france", name: "Travel to France", flag: "🇫🇷", gradient: "linear-gradient(135deg, #97BAFF, #335CFF)" },
-  { id: "japan", name: "Travel to Japan", flag: "🇯🇵", gradient: "linear-gradient(135deg, #47C2FF, #1F7EAD)" },
+  { id: "germany", name: "Travel to Germany", flag: "🇩🇪", image: "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=500&h=300&fit=crop", visa: "Schengen visa required" },
+  { id: "france", name: "Travel to France", flag: "🇫🇷", image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=500&h=300&fit=crop", visa: "Schengen visa required" },
+  { id: "japan", name: "Travel to Japan", flag: "🇯🇵", image: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=500&h=300&fit=crop", visa: "Tourist visa required" },
 ];
 
 const SUGGESTED_PROMPTS = [
@@ -51,14 +51,14 @@ export function ChatHomePage({ onStartChat }: ChatHomePageProps) {
             onClick={() => onStartChat(dest.id)}
             className="flex-none w-[248px] border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-regular-xs cursor-pointer hover:shadow-regular-md hover:-translate-y-0.5 transition-all text-left"
           >
-            <div className="h-[132px]" style={{ background: dest.gradient }} />
+            <div className="h-[132px] bg-cover bg-center" style={{ backgroundImage: `url(${dest.image})` }} />
             <div className="p-3.5 px-4">
               <h4 className="text-lg font-medium tracking-tight">{dest.name}</h4>
               <div className="inline-flex items-center gap-2 mt-2.5 py-1 px-2 pl-1 rounded-full bg-slate-50 text-xs text-slate-600">
                 <span className="w-[18px] h-[18px] rounded-full grid place-items-center text-[11px] overflow-hidden shadow-[inset_0_0_0_1px_rgba(14,18,27,0.08)]">
                   {dest.flag}
                 </span>
-                Schengen visa required
+                {dest.visa}
               </div>
             </div>
           </button>
