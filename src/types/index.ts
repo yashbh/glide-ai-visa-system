@@ -47,3 +47,17 @@ export interface Destination {
   gradient: string;
   visa_type: string;
 }
+
+export interface Document {
+  id: string;
+  user_id: string;
+  conversation_id: string | null;
+  country: string;
+  title: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  storage_path: string;
+  status: "uploaded" | "verified" | "rejected" | "processing";
+  created_at: string;
+}

@@ -1,16 +1,20 @@
 import { useRef, useEffect, useState, useCallback } from "react";
+import { validateFile } from "../../hooks/use-documents";
 
 interface ComposerProps {
   value: string;
   onChange: (value: string) => void;
   onSend: () => void;
+  onFileAttach?: (file: File) => void;
   placeholder?: string;
   disabled?: boolean;
 }
 
-export function Composer({ value, onChange, onSend, placeholder = "Ask Glide anything...", disabled }: ComposerProps) {
+export function Composer({ value, onChange, onSend, onFileAttach, placeholder = "Ask Glide anything...", disabled }: ComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isListening, setIsListening] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
@@ -31,6 +35,43 @@ export function Composer({ value, onChange, onSend, placeholder = "Ask Glide any
   function handleSend() {
     stopListening();
     onSend();
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !onFileAttach) return;
+
+    const error = validateFile(file);
+    if (error) {
+      alert(error);
+      return;
+    }
+    onFileAttach(file);
+    e.target.value = "";
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file || !onFileAttach) return;
+
+    const error = validateFile(file);
+    if (error) {
+      alert(error);
+      return;
+    }
+    onFileAttach(file);
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragOver(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragOver(false);
   }
 
   const startListening = useCallback(() => {
@@ -99,7 +140,26 @@ export function Composer({ value, onChange, onSend, placeholder = "Ask Glide any
 
   return (
     <div className="max-w-[760px] mx-auto w-full px-6 pb-3.5 pt-2 box-border">
-      <div className={`border rounded-[20px] bg-white shadow-regular-md px-4 pt-3.5 pb-3 relative z-[1] transition-colors ${isListening ? "border-red-300 shadow-[0_0_0_3px_rgba(251,55,72,0.1)]" : "border-slate-200"}`}>
+      <div
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        className={`border rounded-[20px] bg-white shadow-regular-md px-4 pt-3.5 pb-3 relative z-[1] transition-colors ${
+          isDragOver
+            ? "border-blue-400 bg-blue-50/50 shadow-[0_0_0_3px_rgba(51,92,255,0.1)]"
+            : isListening
+              ? "border-red-300 shadow-[0_0_0_3px_rgba(251,55,72,0.1)]"
+              : "border-slate-200"
+        }`}
+      >
+        {isDragOver && (
+          <div className="absolute inset-0 rounded-[20px] grid place-items-center bg-blue-50/80 z-10 pointer-events-none">
+            <div className="text-blue-500 text-sm font-medium flex items-center gap-2">
+              <i className="ri-upload-2-line text-lg" />
+              Drop file here (PDF, JPEG, PNG)
+            </div>
+          </div>
+        )}
         <textarea
           ref={textareaRef}
           value={value}
@@ -111,7 +171,18 @@ export function Composer({ value, onChange, onSend, placeholder = "Ask Glide any
           className="w-full box-border border-none outline-none resize-none bg-transparent text-base leading-6 tracking-tight text-slate-950 placeholder:text-slate-400 max-h-[120px]"
         />
         <div className="flex items-center gap-2 mt-2">
-          <button className="w-9 h-9 rounded-full border-none bg-slate-50 text-slate-600 grid place-items-center text-[19px] cursor-pointer hover:bg-slate-200">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={disabled}
+            className="w-9 h-9 rounded-full border-none bg-slate-50 text-slate-600 grid place-items-center text-[19px] cursor-pointer hover:bg-slate-200 disabled:opacity-50"
+          >
             <i className="ri-attachment-2" />
           </button>
           <button

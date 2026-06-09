@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Composer } from "../components/chat/composer";
 import { Message } from "../components/chat/message";
 import { TypingIndicator } from "../components/chat/typing-indicator";
 import { Topbar } from "../components/layout/topbar";
 import { useChat } from "../hooks/use-chat";
+import { useDocuments } from "../hooks/use-documents";
+import { useAuth } from "../hooks/use-auth";
 
 interface ChatPageProps {
   conversationId: string;
@@ -15,7 +17,9 @@ interface ChatPageProps {
 }
 
 export function ChatPage({ conversationId, country, title, isNew, onConversationCreated, onDelete }: ChatPageProps) {
+  const { user } = useAuth();
   const { messages, isLoading, historyLoaded, sendMessage } = useChat(conversationId);
+  const { uploadDocument, isUploading } = useDocuments(user?.id || "", country);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasSentInitial = useRef(false);
@@ -39,12 +43,24 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
     }
   }, [historyLoaded, isNew, messages.length, country, sendMessage, onConversationCreated]);
 
-  function handleSend() {
+  const handleSend = useCallback(() => {
     const trimmed = input.trim();
     if (!trimmed) return;
     setInput("");
     sendMessage(trimmed);
-  }
+  }, [input, sendMessage]);
+
+  const handleFileAttach = useCallback(async (file: File) => {
+    const { document: doc, error } = await uploadDocument(file, conversationId);
+    if (error) {
+      sendMessage(`[Upload failed: ${error}]`);
+      return;
+    }
+    if (doc) {
+      const sizeKB = (doc.file_size / 1024).toFixed(0);
+      sendMessage(`I've uploaded my document: ${doc.title} (${doc.file_type}, ${sizeKB}KB)`);
+    }
+  }, [uploadDocument, conversationId, sendMessage]);
 
   if (!historyLoaded) {
     return (
@@ -63,15 +79,16 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
             {messages.map((msg) => (
               <Message key={msg.id} message={msg} />
             ))}
-            {isLoading && <TypingIndicator />}
+            {(isLoading || isUploading) && <TypingIndicator />}
           </div>
         </div>
         <Composer
           value={input}
           onChange={setInput}
           onSend={handleSend}
+          onFileAttach={handleFileAttach}
           placeholder="Reply to Glide..."
-          disabled={isLoading}
+          disabled={isLoading || isUploading}
         />
       </div>
     </>

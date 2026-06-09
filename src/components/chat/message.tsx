@@ -1,3 +1,4 @@
+import { memo } from "react";
 import Markdown from "react-markdown";
 import type { Message as MessageType } from "../../types";
 
@@ -5,7 +6,7 @@ interface MessageProps {
   message: MessageType;
 }
 
-export function Message({ message }: MessageProps) {
+export const Message = memo(function Message({ message }: MessageProps) {
   if (message.role === "user") {
     return (
       <div className="self-end max-w-[78%] bg-blue-500/10 text-blue-700 rounded-[20px] px-[18px] py-3 text-base leading-6 tracking-tight">
@@ -32,4 +33,4 @@ export function Message({ message }: MessageProps) {
       </div>
     </div>
   );
-}
+});
