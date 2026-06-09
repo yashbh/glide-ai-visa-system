@@ -24,8 +24,13 @@ export function Composer({ value, onChange, onSend, placeholder = "Ask Glide any
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      onSend();
+      handleSend();
     }
+  }
+
+  function handleSend() {
+    stopListening();
+    onSend();
   }
 
   const startListening = useCallback(() => {
@@ -120,7 +125,7 @@ export function Composer({ value, onChange, onSend, placeholder = "Ask Glide any
             <i className={isListening ? "ri-stop-fill" : "ri-mic-line"} />
           </button>
           <button
-            onClick={onSend}
+            onClick={handleSend}
             disabled={!hasContent || disabled}
             className={`ml-auto w-9 h-9 rounded-full border-none grid place-items-center text-[19px] cursor-pointer transition ${
               hasContent
