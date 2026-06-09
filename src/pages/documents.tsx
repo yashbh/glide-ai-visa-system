@@ -70,8 +70,8 @@ const FolderCard = memo(function FolderCard({ folderName, docCount, onOpen }: Fo
       className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-regular-xs hover:shadow-regular-md hover:-translate-y-0.5 transition-all cursor-pointer text-left w-full"
     >
       <div className="h-[140px] bg-slate-50 grid place-items-center">
-        <div className="flex flex-col items-center gap-2">
-          <i className="ri-folder-3-fill text-5xl text-blue-400" />
+        <div className="w-16 h-16 rounded-full bg-blue-100 grid place-items-center text-blue-600 font-display font-semibold text-xl">
+          {folderName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)}
         </div>
       </div>
       <div className="p-3 px-3.5 flex flex-col gap-1">
