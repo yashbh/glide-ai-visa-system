@@ -97,7 +97,7 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
     if (!historyLoaded || hasSentInitial.current) return;
     if (isNew && messages.length === 0) {
       hasSentInitial.current = true;
-      sendMessage(`I want to travel to ${country}. Can you help me with the visa process?`).then(() => {
+      sendMessage(`Hi! I'm interested in traveling to ${country}.`).then(() => {
         onConversationCreated();
       });
     }
@@ -122,9 +122,11 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
       // Resolve traveler name
       let travelerName: string | undefined;
       if (detectedTraveler === "__self__") {
-        travelerName = user?.email?.split("@")[0] || "Self";
+        // Use first known name (the user usually gives their name first)
+        travelerName = knownNames.length > 0 ? knownNames[0] : undefined;
       } else if (detectedTraveler === "__spouse__" || detectedTraveler === "__child__") {
-        travelerName = undefined; // LLM will ask
+        // Try to find spouse/child name from known names (usually second+)
+        travelerName = knownNames.length > 1 ? knownNames[1] : undefined;
       } else if (detectedTraveler) {
         travelerName = detectedTraveler;
       }
