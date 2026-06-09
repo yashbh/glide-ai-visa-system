@@ -7,15 +7,19 @@ interface TravelerInput {
 
 interface TravelerFormProps {
   country: string;
+  existingTravelers?: { name: string; relationship: string }[];
   onSubmit: (travelers: TravelerInput[]) => void;
 }
 
 const RELATIONSHIPS = ["Self", "Spouse", "Child", "Parent", "Sibling", "Other"];
 
-export function TravelerForm({ country, onSubmit }: TravelerFormProps) {
-  const [travelers, setTravelers] = useState<TravelerInput[]>([
-    { name: "", relationship: "Self" },
-  ]);
+export function TravelerForm({ country, existingTravelers, onSubmit }: TravelerFormProps) {
+  const [travelers, setTravelers] = useState<TravelerInput[]>(() => {
+    if (existingTravelers && existingTravelers.length > 0) {
+      return existingTravelers.map((t) => ({ name: t.name, relationship: t.relationship }));
+    }
+    return [{ name: "", relationship: "self" }];
+  });
 
   const addTraveler = useCallback(() => {
     setTravelers((prev) => [...prev, { name: "", relationship: "Spouse" }]);

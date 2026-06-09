@@ -67,21 +67,30 @@ interface ChatPageProps {
   country: string;
   title: string;
   isNew: boolean;
+  existingTravelers: string[];
   onConversationCreated: () => void;
+  onTravelersAdded: (travelers: { name: string; relationship: string }[]) => Promise<void>;
   onDelete: () => void;
 }
 
-export function ChatPage({ conversationId, country, title, isNew, onConversationCreated, onDelete }: ChatPageProps) {
+export function ChatPage({ conversationId, country, title, isNew, existingTravelers, onConversationCreated, onTravelersAdded, onDelete }: ChatPageProps) {
   const { user } = useAuth();
   const { messages, isLoading, historyLoaded, sendMessage } = useChat(conversationId);
   const { uploadDocument, isUploading } = useDocuments(user?.id || "", country);
   const [input, setInput] = useState("");
   const [docPanel, setDocPanel] = useState<{ title: string; body: string } | null>(null);
   const [isDocGenerating, setIsDocGenerating] = useState(false);
-  const [travelers, setTravelers] = useState<string[]>([]);
+  const [travelers, setTravelers] = useState<string[]>(existingTravelers);
   const [showTravelerForm, setShowTravelerForm] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasSentInitial = useRef(false);
+
+  // Keep travelers in sync with parent
+  useEffect(() => {
+    if (existingTravelers.length > 0) {
+      setTravelers(existingTravelers);
+    }
+  }, [existingTravelers]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -92,17 +101,24 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
     }
   }, [messages, isLoading]);
 
-  // Show traveler form for new conversations, or start chat for existing ones
+  // Show traveler form for new conversations (if no existing travelers), or start chat for existing ones
   useEffect(() => {
     if (!historyLoaded || hasSentInitial.current) return;
     if (isNew && messages.length === 0) {
-      setShowTravelerForm(true);
+      if (existingTravelers.length > 0) {
+        // Already have travelers registered — skip form, go straight to chat
+        setShowTravelerForm(true);
+      } else {
+        setShowTravelerForm(true);
+      }
     } else if (!isNew) {
-      // For existing conversations, extract names from history
-      const names = extractTravelerNames(messages);
-      if (names.length > 0) setTravelers(names);
+      // For existing conversations, use existing travelers from parent
+      if (existingTravelers.length === 0) {
+        const names = extractTravelerNames(messages);
+        if (names.length > 0) setTravelers(names);
+      }
     }
-  }, [historyLoaded, isNew, messages.length]);
+  }, [historyLoaded, isNew, messages.length, existingTravelers]);
 
   const handleTravelerSubmit = useCallback(async (travelerList: { name: string; relationship: string }[]) => {
     setShowTravelerForm(false);
@@ -110,18 +126,8 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
     setTravelers(names);
     hasSentInitial.current = true;
 
-    // Store travelers in Supabase
-    if (user) {
-      const { supabase } = await import("../lib/supabase");
-      for (const t of travelerList) {
-        await supabase.from("travelers").insert({
-          user_id: user.id,
-          conversation_id: conversationId,
-          name: t.name.trim(),
-          relationship: t.relationship,
-        });
-      }
-    }
+    // Add new travelers to the global list (saves to Supabase via parent)
+    await onTravelersAdded(travelerList);
 
     // Start conversation with traveler info
     const travelerInfo = travelerList.length === 1
@@ -242,7 +248,7 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
   }
 
   if (showTravelerForm) {
-    return <TravelerForm country={country} onSubmit={handleTravelerSubmit} />;
+    return <TravelerForm country={country} existingTravelers={existingTravelers.map((name) => ({ name, relationship: "self" }))} onSubmit={handleTravelerSubmit} />;
   }
 
   return (

@@ -6,13 +6,18 @@ import { ChatPage } from "../../pages/chat";
 import { DocumentsPage } from "../../pages/documents";
 import { DashboardPage } from "../../pages/dashboard";
 import { TrackingPage } from "../../pages/tracking";
+import { TravelersPage } from "../../pages/travelers";
 import { useConversations } from "../../hooks/use-conversations";
+import { useTravelers } from "../../hooks/use-travelers";
+import { useAuth } from "../../hooks/use-auth";
 
 export function AppShell() {
+  const { user } = useAuth();
   const [view, setView] = useState("home");
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [chatCountry, setChatCountry] = useState<string>("germany");
   const { conversations, refresh: refreshConversations, deleteConversation } = useConversations();
+  const { travelers, addTraveler, updateTraveler, deleteTraveler } = useTravelers(user?.id || "");
 
   const startNewChat = useCallback((country: string) => {
     const newId = crypto.randomUUID();
@@ -45,6 +50,8 @@ export function AppShell() {
     setView("home");
   }
 
+  const travelerNames = travelers.map((t) => t.name);
+
   return (
     <div className="h-screen grid grid-cols-[272px_1fr] bg-white text-slate-950 overflow-hidden">
       <Sidebar
@@ -71,11 +78,25 @@ export function AppShell() {
             country={chatCountry}
             title={chatTitle}
             isNew={!conversations.some((c) => c.id === activeConversationId)}
+            existingTravelers={travelerNames}
             onConversationCreated={refreshConversations}
+            onTravelersAdded={async (newTravelers) => {
+              for (const t of newTravelers) {
+                await addTraveler(t.name, t.relationship);
+              }
+            }}
             onDelete={handleDeleteActive}
           />
         )}
         {view === "documents" && <DocumentsPage />}
+        {view === "travelers" && (
+          <TravelersPage
+            travelers={travelers}
+            onAdd={addTraveler}
+            onUpdate={updateTraveler}
+            onDelete={deleteTraveler}
+          />
+        )}
         {view === "dashboard" && <DashboardPage />}
         {view === "tracking" && <TrackingPage />}
         {view === "library" && (

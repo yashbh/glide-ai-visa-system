@@ -12,6 +12,7 @@ interface SidebarProps {
 
 const NAV_ITEMS = [
   { id: "home", icon: "ri-add-line", label: "New Chat", className: "text-blue-500" },
+  { id: "travelers", icon: "ri-group-line", label: "Travelers" },
   { id: "documents", icon: "ri-folder-3-line", label: "Documents" },
   { id: "dashboard", icon: "ri-dashboard-line", label: "Dashboard" },
   { id: "tracking", icon: "ri-map-pin-line", label: "Tracking" },
