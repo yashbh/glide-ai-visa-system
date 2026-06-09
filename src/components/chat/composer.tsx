@@ -1,21 +1,49 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { validateFile } from "../../hooks/use-documents";
 
+const DOC_TYPES = [
+  "Passport",
+  "Passport Photo",
+  "Bank Statement",
+  "Salary Slip",
+  "ITR",
+  "Travel Insurance",
+  "Flight Booking",
+  "Hotel Booking",
+  "Employment Letter",
+  "Leave Approval",
+  "Cover Letter",
+  "Travel Itinerary",
+  "No Objection Certificate",
+  "Other",
+];
+
+interface AttachmentMeta {
+  file: File;
+  docType: string;
+  travelerName: string;
+}
+
 interface ComposerProps {
   value: string;
   onChange: (value: string) => void;
-  onSend: (attachedFile?: File) => void;
+  onSend: (attachment?: AttachmentMeta) => void;
+  travelers: string[];
   placeholder?: string;
   disabled?: boolean;
 }
 
-export function Composer({ value, onChange, onSend, placeholder = "Ask Glide anything...", disabled }: ComposerProps) {
+export type { AttachmentMeta };
+
+export function Composer({ value, onChange, onSend, travelers, placeholder = "Ask Glide anything...", disabled }: ComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isListening, setIsListening] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [selectedDocType, setSelectedDocType] = useState("Passport");
+  const [selectedTraveler, setSelectedTraveler] = useState("");
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
@@ -25,6 +53,13 @@ export function Composer({ value, onChange, onSend, placeholder = "Ask Glide any
       textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
     }
   }, [value]);
+
+  // Set default traveler when travelers list changes
+  useEffect(() => {
+    if (travelers.length > 0 && !selectedTraveler) {
+      setSelectedTraveler(travelers[0]);
+    }
+  }, [travelers, selectedTraveler]);
 
   // Generate preview URL for images
   useEffect(() => {
@@ -40,6 +75,19 @@ export function Composer({ value, onChange, onSend, placeholder = "Ask Glide any
     setFilePreview(null);
   }, [attachedFile]);
 
+  // Auto-detect doc type from filename
+  useEffect(() => {
+    if (!attachedFile) return;
+    const name = attachedFile.name.toLowerCase();
+    if (name.includes("passport")) setSelectedDocType("Passport");
+    else if (name.includes("bank") || name.includes("statement")) setSelectedDocType("Bank Statement");
+    else if (name.includes("salary") || name.includes("slip")) setSelectedDocType("Salary Slip");
+    else if (name.includes("itr") || name.includes("tax")) setSelectedDocType("ITR");
+    else if (name.includes("insurance")) setSelectedDocType("Travel Insurance");
+    else if (name.includes("flight") || name.includes("ticket")) setSelectedDocType("Flight Booking");
+    else if (name.includes("hotel") || name.includes("booking")) setSelectedDocType("Hotel Booking");
+  }, [attachedFile]);
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -51,7 +99,16 @@ export function Composer({ value, onChange, onSend, placeholder = "Ask Glide any
     stopListening();
     const hasContent = value.trim().length > 0 || attachedFile;
     if (!hasContent) return;
-    onSend(attachedFile || undefined);
+
+    if (attachedFile) {
+      onSend({
+        file: attachedFile,
+        docType: selectedDocType,
+        travelerName: selectedTraveler || travelers[0] || "General",
+      });
+    } else {
+      onSend(undefined);
+    }
     setAttachedFile(null);
     setFilePreview(null);
   }
@@ -190,27 +247,60 @@ export function Composer({ value, onChange, onSend, placeholder = "Ask Glide any
           </div>
         )}
 
-        {/* Attachment preview */}
+        {/* Attachment preview with doc type + person selectors */}
         {attachedFile && (
-          <div className="mb-2.5 flex items-start gap-2">
-            <div className="relative inline-block">
-              {filePreview ? (
-                <img src={filePreview} alt={attachedFile.name} className="h-16 w-16 object-cover rounded-[10px] border border-slate-200" />
-              ) : (
-                <div className="h-16 w-16 rounded-[10px] border border-slate-200 bg-red-50 grid place-items-center">
-                  <i className="ri-file-pdf-2-line text-2xl text-red-500" />
+          <div className="mb-3 p-3 bg-slate-50 rounded-[12px] border border-slate-100">
+            <div className="flex items-start gap-3">
+              {/* Thumbnail */}
+              <div className="relative flex-none">
+                {filePreview ? (
+                  <img src={filePreview} alt={attachedFile.name} className="h-14 w-14 object-cover rounded-[8px] border border-slate-200" />
+                ) : (
+                  <div className="h-14 w-14 rounded-[8px] border border-slate-200 bg-red-50 grid place-items-center">
+                    <i className="ri-file-pdf-2-line text-xl text-red-500" />
+                  </div>
+                )}
+                <button
+                  onClick={removeAttachment}
+                  className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 rounded-full bg-slate-900 text-white grid place-items-center text-[10px] cursor-pointer border-2 border-white"
+                >
+                  <i className="ri-close-line" />
+                </button>
+              </div>
+
+              {/* File info + selectors */}
+              <div className="flex-1 min-w-0 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-slate-700 truncate">{attachedFile.name}</span>
+                  <span className="text-xs text-slate-400 flex-none">{(attachedFile.size / 1024).toFixed(0)} KB</span>
                 </div>
-              )}
-              <button
-                onClick={removeAttachment}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-900 text-white grid place-items-center text-xs cursor-pointer border-2 border-white"
-              >
-                <i className="ri-close-line" />
-              </button>
-            </div>
-            <div className="flex flex-col justify-center min-w-0 pt-1">
-              <span className="text-sm font-medium text-slate-700 truncate">{attachedFile.name}</span>
-              <span className="text-xs text-slate-400">{(attachedFile.size / 1024).toFixed(0)} KB</span>
+
+                <div className="flex gap-2">
+                  {/* Doc type selector */}
+                  <select
+                    value={selectedDocType}
+                    onChange={(e) => setSelectedDocType(e.target.value)}
+                    className="h-7 px-2 text-xs rounded-[6px] border border-slate-200 bg-white text-slate-700 outline-none focus:border-blue-500 cursor-pointer"
+                  >
+                    {DOC_TYPES.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+
+                  {/* Person selector */}
+                  {travelers.length > 0 && (
+                    <select
+                      value={selectedTraveler}
+                      onChange={(e) => setSelectedTraveler(e.target.value)}
+                      className="h-7 px-2 text-xs rounded-[6px] border border-slate-200 bg-white text-slate-700 outline-none focus:border-blue-500 cursor-pointer"
+                    >
+                      {travelers.map((name) => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -220,7 +310,7 @@ export function Composer({ value, onChange, onSend, placeholder = "Ask Glide any
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={isListening ? "Listening... speak now" : attachedFile ? "Add a message about this file..." : placeholder}
+          placeholder={isListening ? "Listening... speak now" : attachedFile ? "Add a note (optional)..." : placeholder}
           disabled={disabled}
           rows={1}
           className="w-full box-border border-none outline-none resize-none bg-transparent text-base leading-6 tracking-[-0.011em] text-slate-950 placeholder:text-slate-400 max-h-[120px]"

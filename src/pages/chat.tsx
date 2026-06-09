@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Composer } from "../components/chat/composer";
+import type { AttachmentMeta } from "../components/chat/composer";
 import { Message } from "../components/chat/message";
 import { TypingIndicator } from "../components/chat/typing-indicator";
 import { DocPanel } from "../components/chat/doc-panel";
 import { Topbar } from "../components/layout/topbar";
 import { useChat } from "../hooks/use-chat";
-import { useDocuments, detectDocType, detectTravelerName } from "../hooks/use-documents";
+import { useDocuments } from "../hooks/use-documents";
 import { useAuth } from "../hooks/use-auth";
 import { generateDocument } from "../lib/api";
 
@@ -39,26 +40,21 @@ function detectDocRequest(message: string): { type: "cover_letter" | "itinerary"
   return null;
 }
 
-// Extract traveler names mentioned in conversation (from AI messages that confirm names)
+// Extract traveler names from conversation (looks for user messages with names)
 function extractTravelerNames(messages: { role: string; content: string }[]): string[] {
   const names: string[] = [];
-
   for (const msg of messages) {
     if (msg.role === "user") {
-      // Look for patterns like "I'm traveling with Priya and Ravi"
-      const withMatch = msg.content.match(/(?:with|and)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/g);
-      if (withMatch) {
-        for (const match of withMatch) {
-          const name = match.replace(/^(?:with|and)\s+/, "").trim();
-          if (name.length > 1 && name.length < 30 && !names.includes(name)) {
-            names.push(name);
-          }
-        }
-      }
-      // Look for "my name is X" or "I'm X"
+      // "My name is Yash Bhati" or "I'm Yash"
       const selfMatch = msg.content.match(/(?:my name is|I'm|I am)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i);
-      if (selfMatch && selfMatch[1] && !names.includes(selfMatch[1])) {
-        names.push(selfMatch[1]);
+      if (selfMatch?.[1] && !names.includes(selfMatch[1])) names.push(selfMatch[1]);
+      // "traveling with Priya" or "with my wife Priya"
+      const withMatch = msg.content.match(/(?:with|wife|husband|spouse|child|son|daughter)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/g);
+      if (withMatch) {
+        for (const m of withMatch) {
+          const name = m.replace(/^(?:with|wife|husband|spouse|child|son|daughter)\s+/i, "").trim();
+          if (name.length > 1 && name.length < 30 && !names.includes(name)) names.push(name);
+        }
       }
     }
   }
@@ -103,37 +99,22 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
     }
   }, [historyLoaded, isNew, messages.length, country, sendMessage, onConversationCreated]);
 
-  const handleSend = useCallback(async (attachedFile?: File) => {
+  // Extract known traveler names from conversation for the dropdown
+  const travelers = useMemo(() => extractTravelerNames(messages), [messages]);
+
+  const handleSend = useCallback(async (attachment?: AttachmentMeta) => {
     const trimmed = input.trim();
-    const hasContent = trimmed.length > 0 || attachedFile;
+    const hasContent = trimmed.length > 0 || attachment;
     if (!hasContent) return;
     setInput("");
 
-    // If there's an attached file, detect doc type + traveler from message, then upload
-    if (attachedFile) {
-      // Detect document type from message or filename
-      const docType = detectDocType(trimmed) || detectDocType(attachedFile.name);
+    // If there's an attachment with explicit doc type + traveler from dropdowns
+    if (attachment) {
+      const { file, docType, travelerName } = attachment;
 
-      // Try to detect whose document this is from the message
-      // Extract known traveler names from conversation history
-      const knownNames = extractTravelerNames(messages);
-      const detectedTraveler = trimmed ? detectTravelerName(trimmed, knownNames) : null;
-
-      // Resolve traveler name
-      let travelerName: string | undefined;
-      if (detectedTraveler === "__self__") {
-        // Use first known name (the user usually gives their name first)
-        travelerName = knownNames.length > 0 ? knownNames[0] : undefined;
-      } else if (detectedTraveler === "__spouse__" || detectedTraveler === "__child__") {
-        // Try to find spouse/child name from known names (usually second+)
-        travelerName = knownNames.length > 1 ? knownNames[1] : undefined;
-      } else if (detectedTraveler) {
-        travelerName = detectedTraveler;
-      }
-
-      const { document: doc, error } = await uploadDocument(attachedFile, conversationId, {
+      const { document: doc, error } = await uploadDocument(file, conversationId, {
         travelerName,
-        docType: docType || undefined,
+        docType,
       });
 
       if (error) {
@@ -142,17 +123,15 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
       }
       if (doc) {
         const sizeKB = (doc.file_size / 1024).toFixed(0);
-        const docLabel = docType || doc.title;
-        const ownerLabel = travelerName ? ` (${travelerName}'s)` : "";
         const fileMsg = trimmed
-          ? `${trimmed}\n\n[Attached: ${docLabel}${ownerLabel} — ${doc.file_type}, ${sizeKB}KB]`
-          : `I've uploaded a document: ${docLabel}${ownerLabel} (${doc.file_type}, ${sizeKB}KB)`;
+          ? `${trimmed}\n\n[Attached: ${docType} (${travelerName}'s) — ${doc.file_type}, ${sizeKB}KB]`
+          : `[Attached: ${docType} (${travelerName}'s) — ${doc.file_type}, ${sizeKB}KB]`;
         sendMessage(fileMsg);
       }
       return;
     }
 
-    // Check if user is asking for a document
+    // Check if user is asking for a document generation
     const docRequest = detectDocRequest(trimmed);
     if (docRequest) {
       await sendMessage(trimmed);
@@ -252,6 +231,7 @@ export function ChatPage({ conversationId, country, title, isNew, onConversation
             value={input}
             onChange={setInput}
             onSend={handleSend}
+            travelers={travelers}
             placeholder="Reply to Glide..."
             disabled={isLoading || isUploading || isDocGenerating}
           />

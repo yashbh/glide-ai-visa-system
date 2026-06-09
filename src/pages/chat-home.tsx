@@ -85,6 +85,7 @@ export function ChatHomePage({ onStartChat }: ChatHomePageProps) {
           value={input}
           onChange={setInput}
           onSend={handleSend}
+          travelers={[]}
           placeholder="Ask Glide anything about visas..."
         />
       </div>
