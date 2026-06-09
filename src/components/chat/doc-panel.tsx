@@ -36,7 +36,7 @@ export const DocPanel = memo(function DocPanel({ title, content, isGenerating, i
   if (!isOpen) return null;
 
   return (
-    <div className="w-[520px] flex-none border-l border-slate-200 bg-white flex flex-col overflow-hidden animate-[slideIn_0.28s_cubic-bezier(0.4,0,0.2,1)]">
+    <div className="w-[50%] flex-none border-l border-slate-200 bg-white flex flex-col overflow-hidden animate-[slideIn_0.28s_cubic-bezier(0.4,0,0.2,1)]">
       {/* Header */}
       <div className="flex items-center gap-2 h-14 px-5 border-b border-slate-200 flex-none">
         <span className="text-[15px] text-slate-400 flex items-center gap-1.5">
