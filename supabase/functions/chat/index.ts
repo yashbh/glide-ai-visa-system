@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
       .select("role, content")
       .eq("conversation_id", conversation_id)
       .order("created_at", { ascending: true })
-      .limit(20);
+      .limit(40);
 
     // Build system prompt
     const requirementsList = (requirements || [])
