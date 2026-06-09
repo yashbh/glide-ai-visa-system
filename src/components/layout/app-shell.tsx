@@ -12,7 +12,7 @@ export function AppShell() {
   const [view, setView] = useState("home");
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [chatCountry, setChatCountry] = useState<string>("germany");
-  const { conversations, refresh: refreshConversations } = useConversations();
+  const { conversations, refresh: refreshConversations, deleteConversation } = useConversations();
 
   const startNewChat = useCallback((country: string) => {
     const newId = crypto.randomUUID();
@@ -48,6 +48,13 @@ export function AppShell() {
         conversations={conversations}
         onNavigate={navigate}
         onOpenConversation={openConversation}
+        onDeleteConversation={async (id) => {
+          await deleteConversation(id);
+          if (activeConversationId === id) {
+            setActiveConversationId(null);
+            setView("home");
+          }
+        }}
       />
       <main className="flex flex-col min-w-0 min-h-0">
         {showTopbar && <Topbar title={topbarTitle} />}

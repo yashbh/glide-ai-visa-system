@@ -7,6 +7,7 @@ interface SidebarProps {
   conversations: Conversation[];
   onNavigate: (view: string) => void;
   onOpenConversation: (id: string, title: string) => void;
+  onDeleteConversation: (id: string) => void;
 }
 
 const NAV_ITEMS = [
@@ -17,7 +18,7 @@ const NAV_ITEMS = [
   { id: "library", icon: "ri-book-open-line", label: "Library" },
 ];
 
-export function Sidebar({ currentView, activeConversationId, conversations, onNavigate, onOpenConversation }: SidebarProps) {
+export function Sidebar({ currentView, activeConversationId, conversations, onNavigate, onOpenConversation, onDeleteConversation }: SidebarProps) {
   const { user, signOut } = useAuth();
 
   return (
@@ -76,18 +77,24 @@ export function Sidebar({ currentView, activeConversationId, conversations, onNa
           <p className="text-xs text-slate-400 px-3 py-2">No conversations yet</p>
         )}
         {conversations.map((conv) => (
-          <button
+          <div
             key={conv.id}
-            onClick={() => onOpenConversation(conv.id, conv.title)}
-            className={`flex items-center gap-2 h-9 px-3 rounded-[8px] border-none w-full text-left cursor-pointer text-sm transition-colors ${
+            className={`group flex items-center gap-2 h-9 px-3 rounded-[8px] cursor-pointer text-sm transition-colors ${
               activeConversationId === conv.id
                 ? "bg-slate-50 text-slate-950 font-medium"
-                : "bg-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-950"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"
             }`}
+            onClick={() => onOpenConversation(conv.id, conv.title)}
           >
             <i className="ri-message-3-line text-base flex-none" />
-            <span className="truncate">{conv.title}</span>
-          </button>
+            <span className="truncate flex-1">{conv.title}</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); onDeleteConversation(conv.id); }}
+              className="hidden group-hover:grid w-6 h-6 place-items-center rounded-[6px] border-none bg-transparent text-slate-400 hover:text-red-500 hover:bg-red-50 text-sm cursor-pointer"
+            >
+              <i className="ri-delete-bin-line" />
+            </button>
+          </div>
         ))}
       </div>
 

@@ -23,5 +23,11 @@ export function useConversations() {
     fetchConversations();
   }, [fetchConversations]);
 
-  return { conversations, loading, refresh: fetchConversations };
+  const deleteConversation = useCallback(async (id: string) => {
+    await supabase.from("messages").delete().eq("conversation_id", id);
+    await supabase.from("conversations").delete().eq("id", id);
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+  }, []);
+
+  return { conversations, loading, refresh: fetchConversations, deleteConversation };
 }
