@@ -1,3 +1,4 @@
+import Markdown from "react-markdown";
 import type { Message as MessageType } from "../../types";
 
 interface MessageProps {
@@ -15,8 +16,8 @@ export function Message({ message }: MessageProps) {
 
   return (
     <div className="self-start max-w-[92%] flex flex-col gap-2.5">
-      <div className="text-base leading-[26px] tracking-tight text-slate-950 whitespace-pre-wrap">
-        {message.content}
+      <div className="prose prose-sm max-w-none text-base leading-[26px] tracking-tight text-slate-950 prose-headings:font-display prose-headings:text-slate-950 prose-headings:mt-4 prose-headings:mb-2 prose-p:my-1.5 prose-ul:my-1.5 prose-li:my-0.5 prose-strong:text-slate-950">
+        <Markdown>{message.content}</Markdown>
       </div>
       <div className="flex gap-0.5">
         <button className="w-[30px] h-[30px] grid place-items-center rounded-[6px] border-none bg-transparent text-slate-400 text-[17px] cursor-pointer hover:bg-slate-50 hover:text-slate-600">

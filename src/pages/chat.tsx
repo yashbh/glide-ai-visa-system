@@ -23,7 +23,10 @@ export function ChatPage({ country }: ChatPageProps) {
     }
   }, [messages, isLoading]);
 
+  const hasSentInitial = useRef(false);
   useEffect(() => {
+    if (hasSentInitial.current) return;
+    hasSentInitial.current = true;
     sendMessage(`I want to travel to ${country}. Can you help me with the visa process?`);
   }, []);
 

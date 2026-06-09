@@ -4,7 +4,9 @@
       "Bash(curl -sL -w \"\\\\n---HTTP_STATUS:%{http_code}---\\\\n\" \"https://api.anthropic.com/v1/design/h/S4sx2scXinP7Zi-qlfe5fQ?open_file=apps%2Fvisa-platform%2Findex.html\")",
       "Bash(npm create *)",
       "Bash(npm config *)",
-      "Bash(npm --version)"
+      "Bash(npm --version)",
+      "Read(//Users/yashbhati/.nvm/versions/node/**)",
+      "Bash(brew list *)"
     ]
   }
 }
