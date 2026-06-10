@@ -50,7 +50,7 @@ export function AppShell() {
     setView("home");
   }
 
-  const travelerNames = travelers.map((t) => t.name);
+  const travelerList = travelers.map((t) => ({ name: t.name, relationship: t.relationship }));
 
   return (
     <div className="h-screen grid grid-cols-[272px_1fr] bg-white text-slate-950 overflow-hidden">
@@ -78,7 +78,7 @@ export function AppShell() {
             country={chatCountry}
             title={chatTitle}
             isNew={!conversations.some((c) => c.id === activeConversationId)}
-            existingTravelers={travelerNames}
+            existingTravelers={travelerList}
             onConversationCreated={refreshConversations}
             onTravelersAdded={async (newTravelers) => {
               for (const t of newTravelers) {

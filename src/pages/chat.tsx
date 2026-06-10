@@ -67,7 +67,7 @@ interface ChatPageProps {
   country: string;
   title: string;
   isNew: boolean;
-  existingTravelers: string[];
+  existingTravelers: { name: string; relationship: string }[];
   onConversationCreated: () => void;
   onTravelersAdded: (travelers: { name: string; relationship: string }[]) => Promise<void>;
   onDelete: () => void;
@@ -80,7 +80,7 @@ export function ChatPage({ conversationId, country, title, isNew, existingTravel
   const [input, setInput] = useState("");
   const [docPanel, setDocPanel] = useState<{ title: string; body: string } | null>(null);
   const [isDocGenerating, setIsDocGenerating] = useState(false);
-  const [travelers, setTravelers] = useState<string[]>(existingTravelers);
+  const [travelers, setTravelers] = useState<string[]>(existingTravelers.map((t) => t.name));
   const [showTravelerForm, setShowTravelerForm] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasSentInitial = useRef(false);
@@ -88,7 +88,7 @@ export function ChatPage({ conversationId, country, title, isNew, existingTravel
   // Keep travelers in sync with parent
   useEffect(() => {
     if (existingTravelers.length > 0) {
-      setTravelers(existingTravelers);
+      setTravelers(existingTravelers.map((t) => t.name));
     }
   }, [existingTravelers]);
 
@@ -248,7 +248,7 @@ export function ChatPage({ conversationId, country, title, isNew, existingTravel
   }
 
   if (showTravelerForm) {
-    return <TravelerForm country={country} existingTravelers={existingTravelers.map((name) => ({ name, relationship: "self" }))} onSubmit={handleTravelerSubmit} />;
+    return <TravelerForm country={country} existingTravelers={existingTravelers} onSubmit={handleTravelerSubmit} />;
   }
 
   return (
