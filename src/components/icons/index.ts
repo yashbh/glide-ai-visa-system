@@ -1,0 +1,16 @@
+export {
+  PassportIcon,
+  CoverLetterIcon,
+  PassportPhotoIcon,
+  BankStatementIcon,
+  FlightBookingIcon,
+  HotelBookingIcon,
+  TravelInsuranceIcon,
+  ItineraryIcon,
+  SalarySlipIcon,
+  EmploymentLetterIcon,
+  ITRIcon,
+  NOCIcon,
+  DOC_ICON_MAP,
+  getDocIcon,
+} from "./doc-icons";

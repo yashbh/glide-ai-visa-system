@@ -269,28 +269,52 @@ IDENTITY & BOUNDARIES (NON-NEGOTIABLE):
     const stream = new ReadableStream({
       async start(controller) {
         const reader = openaiResponse.body!.getReader();
+        let buffer = "";
 
         try {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split("\n").filter((line) => line.startsWith("data: "));
+            buffer += decoder.decode(value, { stream: true });
+
+            const lines = buffer.split("\n");
+            // Keep the last incomplete line in the buffer
+            buffer = lines.pop() || "";
 
             for (const line of lines) {
-              const data = line.slice(6);
+              const trimmed = line.trim();
+              if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
+              const data = trimmed.slice(6);
               if (data === "[DONE]") continue;
 
               try {
                 const parsed = JSON.parse(data);
-                const content = parsed.choices[0]?.delta?.content || "";
+                const content = parsed.choices?.[0]?.delta?.content || "";
                 if (content) {
                   fullReply += content;
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
                 }
               } catch {
-                // skip malformed chunks
+                // Incomplete JSON — shouldn't happen with proper line buffering
+              }
+            }
+          }
+
+          // Process any remaining buffer
+          if (buffer.trim().startsWith("data: ")) {
+            const data = buffer.trim().slice(6);
+            if (data !== "[DONE]") {
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content || "";
+                if (content) {
+                  fullReply += content;
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
+                }
+              } catch {
+                // ignore
               }
             }
           }

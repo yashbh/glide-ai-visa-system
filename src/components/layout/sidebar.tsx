@@ -37,17 +37,6 @@ export function Sidebar({ currentView, activeConversationId, conversations, onNa
         </button>
       </div>
 
-      {/* Search */}
-      <div className="flex items-center gap-2 h-10 px-3 rounded-[10px] bg-slate-50 text-slate-400">
-        <i className="ri-search-line text-lg" />
-        <input
-          type="text"
-          placeholder="Search"
-          className="border-none outline-none bg-transparent flex-1 min-w-0 text-sm text-slate-950 placeholder:text-slate-400"
-        />
-        <kbd className="text-xs text-slate-400 bg-white border border-slate-200 rounded px-1.5 py-0.5">⌘K</kbd>
-      </div>
-
       {/* Navigation */}
       <nav className="flex flex-col gap-0.5">
         {NAV_ITEMS.map((item) => (

@@ -94,16 +94,23 @@ export async function sendChatMessage(
     const reader = response.body!.getReader();
     const decoder = new TextDecoder();
     let fullReply = "";
+    let buffer = "";
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      const chunk = decoder.decode(value, { stream: true });
-      const lines = chunk.split("\n").filter((line) => line.startsWith("data: "));
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split("\n");
+      // Keep the last incomplete line in the buffer
+      buffer = lines.pop() || "";
 
       for (const line of lines) {
-        const data = line.slice(6);
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
+        const data = trimmed.slice(6);
         if (data === "[DONE]") continue;
 
         try {
@@ -116,7 +123,23 @@ export async function sendChatMessage(
             return { reply: "", error: parsed.error };
           }
         } catch {
-          // skip malformed chunks
+          // incomplete JSON — will not happen now since we buffer lines properly
+        }
+      }
+    }
+
+    // Process any remaining buffer
+    if (buffer.trim().startsWith("data: ")) {
+      const data = buffer.trim().slice(6);
+      if (data !== "[DONE]") {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.content) {
+            fullReply += parsed.content;
+            if (onChunk) onChunk(parsed.content);
+          }
+        } catch {
+          // ignore final incomplete chunk
         }
       }
     }
