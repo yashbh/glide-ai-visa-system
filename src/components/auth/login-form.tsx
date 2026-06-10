@@ -26,18 +26,6 @@ export function LoginForm() {
 
   return (
     <div className="w-full">
-      {/* Social buttons */}
-      <div className="flex gap-3 mb-5">
-        <button className="flex-1 h-10 border border-slate-200 rounded-[10px] bg-white flex items-center justify-center gap-2 text-sm font-medium text-slate-700 cursor-pointer hover:bg-slate-50 transition">
-          <i className="ri-apple-fill text-lg" />
-          Sign in w/ Apple
-        </button>
-        <button className="flex-1 h-10 border border-slate-200 rounded-[10px] bg-white flex items-center justify-center gap-2 text-sm font-medium text-slate-700 cursor-pointer hover:bg-slate-50 transition">
-          <i className="ri-google-fill text-lg" />
-          Sign in w/ Google
-        </button>
-      </div>
-
       {/* Form */}
       <form onSubmit={handleSubmit}>
         <div className="mb-3">
