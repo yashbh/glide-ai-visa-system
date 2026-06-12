@@ -3,7 +3,7 @@ import { LoginForm } from "../components/auth/login-form";
 export function LoginPage() {
   return (
     <div className="h-screen bg-slate-50 flex flex-col items-center justify-center px-4">
-      <div className="w-full max-w-[480px] bg-white rounded-2xl border border-slate-200 shadow-regular-md p-8 relative">
+      <div className="w-full max-w-[480px] bg-white rounded-2xl border border-slate-200 shadow-regular-md p-6 md:p-8 relative">
         {/* Logo top-left */}
         <div className="absolute top-6 left-6">
           <div className="w-8 h-8 rounded-[8px] bg-blue-500 grid place-items-center text-white font-bold text-sm shadow-regular-sm">

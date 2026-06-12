@@ -8,6 +8,7 @@ interface SidebarProps {
   onNavigate: (view: string) => void;
   onOpenConversation: (id: string, title: string) => void;
   onDeleteConversation: (id: string) => void;
+  onClose?: () => void;
 }
 
 const NAV_ITEMS = [
@@ -19,12 +20,12 @@ const NAV_ITEMS = [
   { id: "library", icon: "ri-book-open-line", label: "Library" },
 ];
 
-export function Sidebar({ currentView, activeConversationId, conversations, onNavigate, onOpenConversation, onDeleteConversation }: SidebarProps) {
+export function Sidebar({ currentView, activeConversationId, conversations, onNavigate, onOpenConversation, onDeleteConversation, onClose }: SidebarProps) {
   const { user, signOut } = useAuth();
 
   return (
-    <aside className="w-[272px] bg-white flex flex-col py-5 px-3.5 pb-3.5 gap-4 min-h-0">
-      {/* Top: logo + collapse */}
+    <aside className="w-[272px] h-full bg-white flex flex-col py-5 px-3.5 pb-3.5 gap-4 min-h-0">
+      {/* Top: logo + close (mobile) */}
       <div className="flex items-center justify-between px-1.5">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-[10px] bg-blue-500 grid place-items-center text-white font-bold text-lg shadow-regular-sm">
@@ -32,8 +33,11 @@ export function Sidebar({ currentView, activeConversationId, conversations, onNa
           </div>
           <span className="font-display font-semibold text-lg">Glide</span>
         </div>
-        <button className="text-slate-400 text-[22px] bg-transparent border-none cursor-pointer grid place-items-center">
-          <i className="ri-side-bar-line" />
+        <button
+          onClick={onClose}
+          className="text-slate-400 text-[22px] bg-transparent border-none cursor-pointer grid place-items-center md:hidden"
+        >
+          <i className="ri-close-line" />
         </button>
       </div>
 

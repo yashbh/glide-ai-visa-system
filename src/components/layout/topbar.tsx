@@ -7,9 +7,10 @@ interface TopbarProps {
   messages?: Message[];
   onDelete?: () => void;
   transparent?: boolean;
+  onMenuToggle?: () => void;
 }
 
-export function Topbar({ title, subtitle, messages, onDelete, transparent }: TopbarProps) {
+export function Topbar({ title, subtitle, messages, onDelete, transparent, onMenuToggle }: TopbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -57,15 +58,25 @@ export function Topbar({ title, subtitle, messages, onDelete, transparent }: Top
   }
 
   return (
-    <header className={`flex items-center gap-2.5 h-14 px-5 flex-none ${
+    <header className={`flex items-center gap-2 h-14 px-4 md:px-5 flex-none ${
       transparent
         ? "bg-white/70 backdrop-blur-md border-b border-slate-200/50"
         : "border-b border-slate-200 bg-white"
     }`}>
-      <span className="text-[15px] leading-5 text-slate-400 flex items-center gap-1.5">
-        <span>Travel</span>
-        <i className="ri-arrow-right-s-line text-lg" />
-        <b className="text-slate-950 font-semibold">{title}</b>
+      {/* Hamburger — mobile only */}
+      {onMenuToggle && (
+        <button
+          onClick={onMenuToggle}
+          className="w-9 h-9 grid place-items-center rounded-[8px] border-none bg-transparent text-slate-600 text-xl cursor-pointer hover:bg-slate-50 md:hidden"
+        >
+          <i className="ri-menu-line" />
+        </button>
+      )}
+
+      <span className="text-[15px] leading-5 text-slate-400 flex items-center gap-1.5 truncate">
+        <span className="hidden md:inline">Travel</span>
+        <i className="ri-arrow-right-s-line text-lg hidden md:inline" />
+        <b className="text-slate-950 font-semibold truncate">{title}</b>
         {subtitle && (
           <>
             <i className="ri-arrow-right-s-line text-lg" />

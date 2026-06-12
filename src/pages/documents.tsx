@@ -57,9 +57,9 @@ function DocumentViewer({ doc, onClose }: { doc: Document; onClose: () => void }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-4xl max-h-[90vh] m-4 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      <div className="relative w-full max-w-4xl max-h-[90vh] m-2 md:m-4 bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-200">
+        <div className="flex items-center gap-2 md:gap-3 px-4 md:px-5 py-3 md:py-4 border-b border-slate-200">
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-medium tracking-tight truncate">{doc.title}</h3>
             <div className="flex items-center gap-2 mt-0.5">
@@ -199,7 +199,7 @@ const FolderCard = memo(function FolderCard({ folderName, docCount, onOpen }: Fo
   );
 });
 
-export function DocumentsPage() {
+export function DocumentsPage({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const { user } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -244,10 +244,22 @@ export function DocumentsPage() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-[1040px] mx-auto p-9 px-10">
+      {/* Mobile header bar */}
+      {onMenuToggle && (
+        <div className="flex items-center h-14 px-4 border-b border-slate-200 md:hidden flex-none">
+          <button
+            onClick={onMenuToggle}
+            className="w-9 h-9 grid place-items-center rounded-[8px] border-none bg-transparent text-slate-600 text-xl cursor-pointer"
+          >
+            <i className="ri-menu-line" />
+          </button>
+          <span className="text-[15px] font-semibold ml-2">Documents</span>
+        </div>
+      )}
+      <div className="max-w-[1040px] mx-auto p-5 md:p-9 md:px-10">
         {/* Header */}
-        <div className="flex items-start gap-4 mb-6">
-          <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-500 grid place-items-center text-[26px] flex-none">
+        <div className="flex items-start gap-3 md:gap-4 mb-6">
+          <div className="w-10 h-10 md:w-14 md:h-14 rounded-2xl bg-blue-50 text-blue-500 grid place-items-center text-xl md:text-[26px] flex-none">
             <i className="ri-folder-3-fill" />
           </div>
           <div className="flex-1">
@@ -284,14 +296,14 @@ export function DocumentsPage() {
           </div>
         ) : openFolder ? (
           /* Inside a folder — show documents */
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
             {currentFolderDocs.map((doc) => (
               <DocumentCard key={doc.id} doc={doc} onDelete={handleDelete} onView={setViewingDoc} />
             ))}
           </div>
         ) : (
           /* Folder view */
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
             {folderNames.map((name) => (
               <FolderCard
                 key={name}

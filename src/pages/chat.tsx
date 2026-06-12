@@ -71,9 +71,10 @@ interface ChatPageProps {
   onConversationCreated: () => void;
   onTravelersAdded: (travelers: { name: string; relationship: string }[]) => Promise<void>;
   onDelete: () => void;
+  onMenuToggle?: () => void;
 }
 
-export function ChatPage({ conversationId, country, title, isNew, existingTravelers, onConversationCreated, onTravelersAdded, onDelete }: ChatPageProps) {
+export function ChatPage({ conversationId, country, title, isNew, existingTravelers, onConversationCreated, onTravelersAdded, onDelete, onMenuToggle }: ChatPageProps) {
   const { user } = useAuth();
   const { messages, isLoading, historyLoaded, sendMessage } = useChat(conversationId);
   const { uploadDocument, isUploading } = useDocuments(user?.id || "", country);
@@ -258,10 +259,10 @@ export function ChatPage({ conversationId, country, title, isNew, existingTravel
         <div className="flex-1 flex flex-col min-w-0 min-h-0 relative">
           {/* Transparent sticky header */}
           <div className="absolute top-0 left-0 right-0 z-20">
-            <Topbar title={title} messages={messages} onDelete={onDelete} transparent />
+            <Topbar title={title} messages={messages} onDelete={onDelete} transparent onMenuToggle={onMenuToggle} />
           </div>
           <div className="flex-1 overflow-y-auto" ref={scrollRef}>
-            <div className="max-w-[760px] mx-auto px-6 pt-16 pb-7 flex flex-col gap-[22px]">
+            <div className="max-w-[760px] mx-auto px-4 md:px-6 pt-16 pb-7 flex flex-col gap-4 md:gap-[22px]">
               {messages.map((msg) => (
                 <Message key={msg.id} message={msg} />
               ))}

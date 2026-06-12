@@ -6,11 +6,12 @@ interface TravelersPageProps {
   onAdd: (name: string, relationship: string) => Promise<Traveler | null>;
   onUpdate: (id: string, updates: { name?: string; relationship?: string }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onMenuToggle?: () => void;
 }
 
 const RELATIONSHIPS = ["self", "spouse", "child", "parent", "sibling", "other"];
 
-export function TravelersPage({ travelers, onAdd, onUpdate, onDelete }: TravelersPageProps) {
+export function TravelersPage({ travelers, onAdd, onUpdate, onDelete, onMenuToggle }: TravelersPageProps) {
   const [newName, setNewName] = useState("");
   const [newRelationship, setNewRelationship] = useState("self");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -42,9 +43,21 @@ export function TravelersPage({ travelers, onAdd, onUpdate, onDelete }: Traveler
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-[640px] mx-auto p-9 px-10">
-        <div className="flex items-start gap-4 mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-purple-50 text-purple-500 grid place-items-center text-[26px] flex-none">
+      {/* Mobile header bar */}
+      {onMenuToggle && (
+        <div className="flex items-center h-14 px-4 border-b border-slate-200 md:hidden flex-none">
+          <button
+            onClick={onMenuToggle}
+            className="w-9 h-9 grid place-items-center rounded-[8px] border-none bg-transparent text-slate-600 text-xl cursor-pointer"
+          >
+            <i className="ri-menu-line" />
+          </button>
+          <span className="text-[15px] font-semibold ml-2">Travelers</span>
+        </div>
+      )}
+      <div className="max-w-[640px] mx-auto p-5 md:p-9 md:px-10">
+        <div className="flex items-start gap-3 md:gap-4 mb-6 md:mb-8">
+          <div className="w-10 h-10 md:w-14 md:h-14 rounded-2xl bg-purple-50 text-purple-500 grid place-items-center text-xl md:text-[26px] flex-none">
             <i className="ri-group-fill" />
           </div>
           <div>

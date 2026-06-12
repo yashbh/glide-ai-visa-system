@@ -16,6 +16,7 @@ export function AppShell() {
   const [view, setView] = useState("home");
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [chatCountry, setChatCountry] = useState<string>("germany");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { conversations, refresh: refreshConversations, deleteConversation } = useConversations();
   const { travelers, addTraveler, updateTraveler, deleteTraveler } = useTravelers(user?.id || "");
 
@@ -31,6 +32,7 @@ export function AppShell() {
     const country = title.toLowerCase().includes("france") ? "france" : "germany";
     setChatCountry(country);
     setView("chat");
+    setSidebarOpen(false);
   }, []);
 
   function navigate(v: string) {
@@ -38,6 +40,7 @@ export function AppShell() {
       setActiveConversationId(null);
     }
     setView(v);
+    setSidebarOpen(false);
   }
 
   const showTopbar = view === "home";
@@ -53,23 +56,40 @@ export function AppShell() {
   const travelerList = travelers.map((t) => ({ name: t.name, relationship: t.relationship }));
 
   return (
-    <div className="h-screen grid grid-cols-[272px_1fr] bg-white text-slate-950 overflow-hidden">
-      <Sidebar
-        currentView={view}
-        activeConversationId={activeConversationId}
-        conversations={conversations}
-        onNavigate={navigate}
-        onOpenConversation={openConversation}
-        onDeleteConversation={async (id) => {
-          await deleteConversation(id);
-          if (activeConversationId === id) {
-            setActiveConversationId(null);
-            setView("home");
-          }
-        }}
-      />
-      <main className="flex flex-col min-w-0 min-h-0 m-2 ml-0 rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden">
-        {showTopbar && <Topbar title="New chat" />}
+    <div className="h-screen flex bg-white text-slate-950 overflow-hidden">
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — hidden on mobile, shown on desktop */}
+      <div className={`
+        fixed inset-y-0 left-0 z-50 w-[272px] transform transition-transform duration-200 ease-out md:relative md:translate-x-0 md:z-auto
+        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+      `}>
+        <Sidebar
+          currentView={view}
+          activeConversationId={activeConversationId}
+          conversations={conversations}
+          onNavigate={navigate}
+          onOpenConversation={openConversation}
+          onDeleteConversation={async (id) => {
+            await deleteConversation(id);
+            if (activeConversationId === id) {
+              setActiveConversationId(null);
+              setView("home");
+            }
+          }}
+          onClose={() => setSidebarOpen(false)}
+        />
+      </div>
+
+      {/* Main content */}
+      <main className="flex-1 flex flex-col min-w-0 min-h-0 md:m-2 md:ml-0 md:rounded-2xl bg-slate-50 md:border md:border-slate-200 overflow-hidden">
+        {showTopbar && <Topbar title="New chat" onMenuToggle={() => setSidebarOpen(true)} />}
         {view === "home" && <ChatHomePage onStartChat={startNewChat} />}
         {view === "chat" && activeConversationId && (
           <ChatPage
@@ -86,15 +106,17 @@ export function AppShell() {
               }
             }}
             onDelete={handleDeleteActive}
+            onMenuToggle={() => setSidebarOpen(true)}
           />
         )}
-        {view === "documents" && <DocumentsPage />}
+        {view === "documents" && <DocumentsPage onMenuToggle={() => setSidebarOpen(true)} />}
         {view === "travelers" && (
           <TravelersPage
             travelers={travelers}
             onAdd={addTraveler}
             onUpdate={updateTraveler}
             onDelete={deleteTraveler}
+            onMenuToggle={() => setSidebarOpen(true)}
           />
         )}
         {view === "dashboard" && <DashboardPage />}
