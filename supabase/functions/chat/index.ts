@@ -378,21 +378,53 @@ NEVER split across messages. NEVER tell the user to wait. Output the intro + mar
           console.log(`[chat] OCR extracted: ${extractedText.slice(0, 300)}`);
 
           // Try to extract person's name from passport OCR text
-          const textUpper = extractedText.toUpperCase();
-          // Indian passports: look for "Surname" and "Given Name(s)" fields
-          const surnameMatch = textUpper.match(/SURNAME\s*[:/\n]\s*([A-Z]+)/);
-          const givenMatch = textUpper.match(/GIVEN\s*NAME(?:\(S\)|S)?\s*[:/\n]\s*([A-Z\s]+)/);
-          if (surnameMatch && givenMatch) {
-            const surname = surnameMatch[1].trim();
-            const given = givenMatch[1].trim().split(/\s+/)[0];
-            ocrExtractedName = `${given.charAt(0)}${given.slice(1).toLowerCase()} ${surname.charAt(0)}${surname.slice(1).toLowerCase()}`;
+          // Handles various markdown formats: tables, bold, colons, pipes
+          const text = extractedText;
+          const textUpper = text.toUpperCase();
+
+          // Pattern 1: "Surname" followed by value (colon, pipe, newline, bold, etc.)
+          const surnamePatterns = [
+            /[Ss]urname\s*[:/|]\s*\**\s*([A-Z][A-Z]+)/,
+            /\|\s*[Ss]urname\s*\|\s*([A-Z][A-Z]+)/,
+            /SURNAME\s*[:/|\n]\s*([A-Z]+)/,
+            /Surname\s*\**\s*[:\-]?\s*\**\s*([A-Z][A-Za-z]+)/,
+          ];
+          const givenPatterns = [
+            /[Gg]iven\s*[Nn]ame(?:\(s\)|s)?\s*[:/|]\s*\**\s*([A-Z][A-Z]+)/,
+            /\|\s*[Gg]iven\s*[Nn]ame(?:\(s\)|s)?\s*\|\s*([A-Z][A-Z]+)/,
+            /GIVEN\s*NAME(?:\(S\)|S)?\s*[:/|\n]\s*([A-Z\s]+)/,
+            /Given\s*Name(?:\(s\)|s)?\s*\**\s*[:\-]?\s*\**\s*([A-Z][A-Za-z]+)/,
+          ];
+
+          let surname = "";
+          let given = "";
+          for (const p of surnamePatterns) {
+            const m = text.match(p);
+            if (m) { surname = m[1].trim(); break; }
+          }
+          for (const p of givenPatterns) {
+            const m = text.match(p);
+            if (m) { given = m[1].trim().split(/\s+/)[0]; break; }
+          }
+
+          if (surname && given) {
+            const fmt = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+            ocrExtractedName = `${fmt(given)} ${fmt(surname)}`;
             console.log(`[chat] Extracted name: ${ocrExtractedName}`);
           } else {
-            // Fallback: look for a line with "Name" followed by capitalized words
-            const nameLineMatch = extractedText.match(/(?:Name|NAME)\s*[:/]\s*([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)+)/);
-            if (nameLineMatch) {
-              ocrExtractedName = nameLineMatch[1].trim();
-              console.log(`[chat] Extracted name (fallback): ${ocrExtractedName}`);
+            // Fallback: look for "Name" field with a value
+            const namePatterns = [
+              /[Nn]ame\s*[:/|]\s*\**\s*([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)+)/,
+              /\|\s*[Nn]ame\s*\|\s*([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)+)/,
+              /NAME\s*[:/|]\s*([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)+)/,
+            ];
+            for (const p of namePatterns) {
+              const m = text.match(p);
+              if (m) {
+                ocrExtractedName = m[1].trim();
+                console.log(`[chat] Extracted name (fallback): ${ocrExtractedName}`);
+                break;
+              }
             }
           }
 
