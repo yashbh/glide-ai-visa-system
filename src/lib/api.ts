@@ -55,7 +55,7 @@ function getMockResponse(message: string): string {
 export async function sendChatMessage(
   request: ChatRequest,
   onChunk?: (content: string) => void,
-  onMeta?: (meta: { provider: string; model: string }) => void
+  onMeta?: (meta: { provider: string; model: string; ocr_name?: string }) => void
 ): Promise<ChatResponse> {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 

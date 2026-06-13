@@ -4,24 +4,46 @@ import { useAuth } from "../hooks/use-auth";
 import { getDocIcon } from "../components/icons/doc-icons";
 import type { Document } from "../types";
 
-const COUNTRY_FLAGS: Record<string, string> = {
-  germany: "🇩🇪",
-  france: "🇫🇷",
-  italy: "🇮🇹",
-  spain: "🇪🇸",
-  netherlands: "🇳🇱",
-  belgium: "🇧🇪",
-  austria: "🇦🇹",
-  switzerland: "🇨🇭",
-  portugal: "🇵🇹",
-  greece: "🇬🇷",
-  usa: "🇺🇸",
-  uk: "🇬🇧",
-  canada: "🇨🇦",
-  australia: "🇦🇺",
-  japan: "🇯🇵",
-  singapore: "🇸🇬",
+const COUNTRY_CODES: Record<string, string> = {
+  germany: "de",
+  france: "fr",
+  italy: "it",
+  spain: "es",
+  netherlands: "nl",
+  belgium: "be",
+  austria: "at",
+  switzerland: "ch",
+  portugal: "pt",
+  greece: "gr",
+  usa: "us",
+  uk: "gb",
+  canada: "ca",
+  australia: "au",
+  japan: "jp",
+  singapore: "sg",
+  india: "in",
+  czech: "cz",
+  denmark: "dk",
+  sweden: "se",
+  norway: "no",
+  finland: "fi",
+  poland: "pl",
+  ireland: "ie",
 };
+
+function CountryFlag({ country, size = 16 }: { country: string; size?: number }) {
+  const code = COUNTRY_CODES[country.toLowerCase()];
+  if (!code) return <span className="text-xs">🏳️</span>;
+  return (
+    <img
+      src={`https://hatscripts.github.io/circle-flags/flags/${code}.svg`}
+      alt={country}
+      width={size}
+      height={size}
+      className="rounded-full"
+    />
+  );
+}
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
   uploaded: { label: "Uploaded", color: "text-slate-500 bg-slate-50", icon: "ri-upload-cloud-2-fill" },
@@ -66,7 +88,7 @@ function DocumentViewer({ doc, onClose }: { doc: Document; onClose: () => void }
               <span className="text-xs text-slate-400">{doc.file_name} · {(doc.file_size / 1024).toFixed(0)}KB</span>
               {doc.country && (
                 <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">
-                  <span className="text-xs">{COUNTRY_FLAGS[doc.country.toLowerCase()] || "🏳️"}</span>
+                  <CountryFlag country={doc.country} size={16} />
                   {doc.country}
                 </span>
               )}
@@ -162,7 +184,7 @@ const DocumentCard = memo(function DocumentCard({ doc, onDelete, onView }: { doc
           <h4 className="text-sm font-medium tracking-tight truncate">{doc.title}</h4>
           {doc.country && (
             <span className="flex-none flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">
-              <span className="text-xs">{COUNTRY_FLAGS[doc.country.toLowerCase()] || "🏳️"}</span>
+              <CountryFlag country={doc.country} size={16} />
               {doc.country}
             </span>
           )}

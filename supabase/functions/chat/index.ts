@@ -349,6 +349,7 @@ NEVER split across messages. NEVER tell the user to wait. Output the intro + mar
 
     // If a file was uploaded (image or PDF), run Mistral OCR to extract text
     const hasDocument = !!(image_base64 && image_type);
+    let ocrExtractedName: string | null = null;
     if (hasDocument && mistralKey) {
       try {
         // Build OCR document payload — supports both images and PDFs
@@ -375,6 +376,25 @@ NEVER split across messages. NEVER tell the user to wait. Output the intro + mar
           const ocrData = await ocrResponse.json();
           const extractedText = ocrData?.pages?.map((p: any) => p.markdown).join("\n") || ocrData?.text || JSON.stringify(ocrData);
           console.log(`[chat] OCR extracted: ${extractedText.slice(0, 300)}`);
+
+          // Try to extract person's name from passport OCR text
+          const textUpper = extractedText.toUpperCase();
+          // Indian passports: look for "Surname" and "Given Name(s)" fields
+          const surnameMatch = textUpper.match(/SURNAME\s*[:/\n]\s*([A-Z]+)/);
+          const givenMatch = textUpper.match(/GIVEN\s*NAME(?:\(S\)|S)?\s*[:/\n]\s*([A-Z\s]+)/);
+          if (surnameMatch && givenMatch) {
+            const surname = surnameMatch[1].trim();
+            const given = givenMatch[1].trim().split(/\s+/)[0];
+            ocrExtractedName = `${given.charAt(0)}${given.slice(1).toLowerCase()} ${surname.charAt(0)}${surname.slice(1).toLowerCase()}`;
+            console.log(`[chat] Extracted name: ${ocrExtractedName}`);
+          } else {
+            // Fallback: look for a line with "Name" followed by capitalized words
+            const nameLineMatch = extractedText.match(/(?:Name|NAME)\s*[:/]\s*([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)+)/);
+            if (nameLineMatch) {
+              ocrExtractedName = nameLineMatch[1].trim();
+              console.log(`[chat] Extracted name (fallback): ${ocrExtractedName}`);
+            }
+          }
 
           // Append extracted text to the last user message so the LLM has real data
           const lastUserMsg = openaiMessages[openaiMessages.length - 1];
@@ -435,8 +455,10 @@ NEVER split across messages. NEVER tell the user to wait. Output the intro + mar
 
     const stream = new ReadableStream({
       async start(controller) {
-        // Send provider info as first event
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ meta: { provider: LLM_PROVIDER, model: llmConfig.model } })}\n\n`));
+        // Send provider info as first event (includes OCR-extracted name if available)
+        const metaPayload: any = { provider: LLM_PROVIDER, model: llmConfig.model };
+        if (ocrExtractedName) metaPayload.ocr_name = ocrExtractedName;
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ meta: metaPayload })}\n\n`));
 
         const reader = openaiResponse.body!.getReader();
         let buffer = "";

@@ -45,24 +45,6 @@ function compressImageToBase64(file: File, maxSize = 800): Promise<string> {
   });
 }
 
-// Extract traveler names from conversation (looks for user messages with names)
-function extractTravelerNames(messages: { role: string; content: string }[]): string[] {
-  const names: string[] = [];
-  for (const msg of messages) {
-    if (msg.role === "user") {
-      const selfMatch = msg.content.match(/(?:my name is|I'm|I am)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i);
-      if (selfMatch?.[1] && !names.includes(selfMatch[1])) names.push(selfMatch[1]);
-      const withMatch = msg.content.match(/(?:with|wife|husband|spouse|child|son|daughter)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/g);
-      if (withMatch) {
-        for (const m of withMatch) {
-          const name = m.replace(/^(?:with|wife|husband|spouse|child|son|daughter)\s+/i, "").trim();
-          if (name.length > 1 && name.length < 30 && !names.includes(name)) names.push(name);
-        }
-      }
-    }
-  }
-  return names;
-}
 
 interface ChatPageProps {
   conversationId: string;
@@ -76,29 +58,31 @@ interface ChatPageProps {
   onMenuToggle?: () => void;
 }
 
-export function ChatPage({ conversationId, country, title, isNew, existingTravelers, onConversationCreated, onDelete, onMenuToggle }: ChatPageProps) {
+export function ChatPage({ conversationId, country, title, isNew, onConversationCreated, onDelete, onMenuToggle }: ChatPageProps) {
   const { user } = useAuth();
   const { uploadDocument, isUploading } = useDocuments(user?.id || "", country);
   const [input, setInput] = useState("");
   const [docPanel, setDocPanel] = useState<{ title: string; body: string } | null>(null);
   const [isDocGenerating, setIsDocGenerating] = useState(false);
-  const [travelers, setTravelers] = useState<string[]>(existingTravelers.map((t) => t.name));
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasSentInitial = useRef(false);
+  const lastUploadedDocIdRef = useRef<string | null>(null);
 
   const handleCoverLetter = useCallback((event: { title: string; content: string; isGenerating: boolean }) => {
     setDocPanel({ title: event.title, body: event.content });
     setIsDocGenerating(event.isGenerating);
   }, []);
 
-  const { messages, isLoading, historyLoaded, sendMessage } = useChat(conversationId, handleCoverLetter);
+  const handleOcrName = useCallback(async (name: string) => {
+    const docId = lastUploadedDocIdRef.current;
+    if (!docId) return;
+    const { supabase } = await import("../lib/supabase");
+    await supabase.from("documents").update({ traveler_name: name }).eq("id", docId);
+    console.log(`[Glide] Updated document ${docId} traveler_name to "${name}"`);
+    lastUploadedDocIdRef.current = null;
+  }, []);
 
-  // Keep travelers in sync with parent
-  useEffect(() => {
-    if (existingTravelers.length > 0) {
-      setTravelers(existingTravelers.map((t) => t.name));
-    }
-  }, [existingTravelers]);
+  const { messages, isLoading, historyLoaded, sendMessage } = useChat(conversationId, handleCoverLetter, handleOcrName);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -117,11 +101,8 @@ export function ChatPage({ conversationId, country, title, isNew, existingTravel
       sendMessage(`Hi! I'm interested in traveling to ${country}.`).then(() => {
         onConversationCreated();
       });
-    } else if (!isNew && existingTravelers.length === 0) {
-      const names = extractTravelerNames(messages);
-      if (names.length > 0) setTravelers(names);
     }
-  }, [historyLoaded, isNew, messages.length, existingTravelers]);
+  }, [historyLoaded, isNew, messages.length]);
 
   const handleSend = useCallback(async (attachment?: AttachmentMeta) => {
     const trimmed = input.trim();
@@ -129,12 +110,11 @@ export function ChatPage({ conversationId, country, title, isNew, existingTravel
     if (!hasContent) return;
     setInput("");
 
-    // If there's an attachment with explicit doc type + traveler from dropdowns
+    // If there's an attachment
     if (attachment) {
-      const { file, docType, travelerName } = attachment;
+      const { file, docType } = attachment;
 
       const { document: doc, error } = await uploadDocument(file, conversationId, {
-        travelerName,
         docType,
       });
 
@@ -143,29 +123,24 @@ export function ChatPage({ conversationId, country, title, isNew, existingTravel
         return;
       }
       if (doc) {
+        lastUploadedDocIdRef.current = doc.id;
         const sizeKB = (doc.file_size / 1024).toFixed(0);
         const fileMsg = trimmed
-          ? `${trimmed}\n\n[Attached: ${docType} (${travelerName}'s) — ${doc.file_type}, ${sizeKB}KB]`
-          : `[Attached: ${docType} (${travelerName}'s) — ${doc.file_type}, ${sizeKB}KB]`;
+          ? `${trimmed}\n\n[Attached: ${docType} — ${doc.file_type}, ${sizeKB}KB]`
+          : `[Attached: ${docType} — ${doc.file_type}, ${sizeKB}KB]`;
 
-        console.log(`[Glide] File type: "${file.type}", name: "${file.name}", size: ${file.size}`);
-
-        const isImage = file.type.startsWith("image/") || file.name.match(/\.(jpg|jpeg|png)$/i);
+        const isImage = file.type.startsWith("image/") || !!file.name.match(/\.(jpg|jpeg|png)$/i);
         const isPdf = file.type === "application/pdf" || file.name.endsWith(".pdf");
 
         if (isImage) {
           try {
             const base64 = await compressImageToBase64(file);
-            console.log(`[Glide] Image compressed: ${(base64.length / 1024).toFixed(0)}KB base64`);
             sendMessage(fileMsg, base64, "image/jpeg");
-          } catch (err) {
-            console.error("[Glide] Image compression failed:", err);
+          } catch {
             sendMessage(fileMsg);
           }
         } else if (isPdf) {
-          // Send PDF as base64 for OCR extraction
           const base64 = await fileToBase64Raw(file);
-          console.log(`[Glide] PDF base64: ${(base64.length / 1024).toFixed(0)}KB`);
           sendMessage(fileMsg, base64, "application/pdf");
         } else {
           sendMessage(fileMsg);
@@ -239,7 +214,6 @@ export function ChatPage({ conversationId, country, title, isNew, existingTravel
             value={input}
             onChange={setInput}
             onSend={handleSend}
-            travelers={travelers}
             placeholder="Reply to Glide..."
             disabled={isLoading || isUploading || isDocGenerating}
           />

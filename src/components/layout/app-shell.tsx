@@ -94,7 +94,6 @@ export function AppShell() {
               setView("home");
             }
           }}
-          onClose={() => setMobileMenuOpen(false)}
         />
       </div>
 
@@ -113,7 +112,6 @@ export function AppShell() {
               setView("home");
             }
           }}
-          onClose={() => setDesktopSidebarOpen(false)}
         />
       </div>
 

@@ -6,13 +6,39 @@ interface MessageProps {
   message: MessageType;
 }
 
-export const Message = memo(function Message({ message }: MessageProps) {
-  if (message.role === "user") {
+function UserMessage({ content }: { content: string }) {
+  // Check if message has an attachment tag
+  const attachMatch = content.match(/\[Attached: (.+?) — (.+?), (.+?)\]/);
+  const textContent = content.replace(/\n?\n?\[Attached: .+?\]/, "").trim();
+
+  if (attachMatch) {
+    const [, docType, fileType] = attachMatch;
+    const isImage = fileType.startsWith("image/");
     return (
-      <div className="self-end max-w-[78%] bg-slate-900 text-white rounded-[20px] px-[18px] py-3 text-[15px] leading-6 tracking-[-0.011em]">
-        {message.content}
+      <div className="self-end max-w-[78%] flex flex-col gap-2">
+        <div className="bg-slate-900 text-white rounded-[20px] px-[18px] py-3 text-[15px] leading-6 tracking-[-0.011em]">
+          <div className="flex items-center gap-2 mb-1">
+            <div className={`w-8 h-8 rounded-[6px] grid place-items-center ${isImage ? "bg-blue-500/20" : "bg-red-500/20"}`}>
+              <i className={`${isImage ? "ri-image-line text-blue-300" : "ri-file-pdf-2-line text-red-300"} text-base`} />
+            </div>
+            <span className="text-sm font-medium text-slate-200">{docType}</span>
+          </div>
+          {textContent && <p className="mt-1.5">{textContent}</p>}
+        </div>
       </div>
     );
+  }
+
+  return (
+    <div className="self-end max-w-[78%] bg-slate-900 text-white rounded-[20px] px-[18px] py-3 text-[15px] leading-6 tracking-[-0.011em]">
+      {content}
+    </div>
+  );
+}
+
+export const Message = memo(function Message({ message }: MessageProps) {
+  if (message.role === "user") {
+    return <UserMessage content={message.content} />;
   }
 
   return (

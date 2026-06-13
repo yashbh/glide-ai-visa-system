@@ -21,21 +21,19 @@ const DOC_TYPES = [
 interface AttachmentMeta {
   file: File;
   docType: string;
-  travelerName: string;
 }
 
 interface ComposerProps {
   value: string;
   onChange: (value: string) => void;
   onSend: (attachment?: AttachmentMeta) => void;
-  travelers: string[];
   placeholder?: string;
   disabled?: boolean;
 }
 
 export type { AttachmentMeta };
 
-export function Composer({ value, onChange, onSend, travelers, placeholder = "Ask Glide anything...", disabled }: ComposerProps) {
+export function Composer({ value, onChange, onSend, placeholder = "Ask Glide anything...", disabled }: ComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isListening, setIsListening] = useState(false);
@@ -43,7 +41,6 @@ export function Composer({ value, onChange, onSend, travelers, placeholder = "As
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [selectedDocType, setSelectedDocType] = useState("Passport");
-  const [selectedTraveler, setSelectedTraveler] = useState("");
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
@@ -53,13 +50,6 @@ export function Composer({ value, onChange, onSend, travelers, placeholder = "As
       textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
     }
   }, [value]);
-
-  // Set default traveler when travelers list changes
-  useEffect(() => {
-    if (travelers.length > 0 && !selectedTraveler) {
-      setSelectedTraveler(travelers[0]);
-    }
-  }, [travelers, selectedTraveler]);
 
   // Generate preview URL for images
   useEffect(() => {
@@ -104,7 +94,6 @@ export function Composer({ value, onChange, onSend, travelers, placeholder = "As
       onSend({
         file: attachedFile,
         docType: selectedDocType,
-        travelerName: selectedTraveler || travelers[0] || "General",
       });
     } else {
       onSend(undefined);
@@ -260,38 +249,22 @@ export function Composer({ value, onChange, onSend, travelers, placeholder = "As
                 </button>
               </div>
 
-              {/* File info + selectors */}
+              {/* File info + doc type selector */}
               <div className="flex-1 min-w-0 flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-slate-700 truncate">{attachedFile.name}</span>
                   <span className="text-xs text-slate-400 flex-none">{(attachedFile.size / 1024).toFixed(0)} KB</span>
                 </div>
 
-                <div className="flex gap-2">
-                  {/* Doc type selector */}
-                  <select
-                    value={selectedDocType}
-                    onChange={(e) => setSelectedDocType(e.target.value)}
-                    className="h-7 px-2 text-xs rounded-[6px] border border-slate-200 bg-white text-slate-700 outline-none focus:border-blue-500 cursor-pointer"
-                  >
-                    {DOC_TYPES.map((type) => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
-
-                  {/* Person selector */}
-                  {travelers.length > 0 && (
-                    <select
-                      value={selectedTraveler}
-                      onChange={(e) => setSelectedTraveler(e.target.value)}
-                      className="h-7 px-2 text-xs rounded-[6px] border border-slate-200 bg-white text-slate-700 outline-none focus:border-blue-500 cursor-pointer"
-                    >
-                      {travelers.map((name) => (
-                        <option key={name} value={name}>{name}</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
+                <select
+                  value={selectedDocType}
+                  onChange={(e) => setSelectedDocType(e.target.value)}
+                  className="h-7 px-2 text-xs rounded-[6px] border border-slate-200 bg-white text-slate-700 outline-none focus:border-blue-500 cursor-pointer w-fit"
+                >
+                  {DOC_TYPES.map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

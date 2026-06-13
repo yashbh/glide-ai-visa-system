@@ -12,7 +12,7 @@ export interface CoverLetterEvent {
   isGenerating: boolean;
 }
 
-export function useChat(conversationId: string, onCoverLetter?: (event: CoverLetterEvent) => void) {
+export function useChat(conversationId: string, onCoverLetter?: (event: CoverLetterEvent) => void, onOcrName?: (name: string) => void) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
@@ -116,6 +116,9 @@ export function useChat(conversationId: string, onCoverLetter?: (event: CoverLet
       },
       (meta) => {
         console.log(`[Glide] Using ${meta.provider} (${meta.model})`);
+        if (meta.ocr_name && onOcrName) {
+          onOcrName(meta.ocr_name);
+        }
       }
     );
 
@@ -143,7 +146,7 @@ export function useChat(conversationId: string, onCoverLetter?: (event: CoverLet
         m.id === assistantId ? { ...m, content: finalContent } : m
       )
     );
-  }, [conversationId, onCoverLetter]);
+  }, [conversationId, onCoverLetter, onOcrName]);
 
   return { messages, isLoading, historyLoaded, sendMessage };
 }
