@@ -86,10 +86,10 @@ export function Sidebar({ currentView, activeConversationId, conversations, onNa
       {/* User */}
       <div className="mt-auto flex items-center gap-2.5 py-2.5 px-2 border-t border-slate-200">
         <div className="w-8 h-8 rounded-full bg-slate-200 grid place-items-center text-sm font-medium text-slate-600">
-          {user?.email?.[0]?.toUpperCase() || "U"}
+          {(user?.user_metadata?.full_name as string)?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U"}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium leading-[18px] truncate">{user?.email?.split("@")[0] || "User"}</div>
+          <div className="text-sm font-medium leading-[18px] truncate">{(user?.user_metadata?.full_name as string) || user?.email?.split("@")[0] || "User"}</div>
           <div className="text-xs leading-4 text-slate-400 truncate">{user?.email || ""}</div>
         </div>
         <button onClick={signOut} className="text-slate-400 hover:text-slate-600 text-lg cursor-pointer bg-transparent border-none">

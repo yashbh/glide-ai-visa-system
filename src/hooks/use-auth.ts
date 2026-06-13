@@ -41,12 +41,16 @@ export function useAuth() {
     return error ? error.message : null;
   }
 
-  async function signUp(email: string, password: string): Promise<string | null> {
+  async function signUp(email: string, password: string, fullName?: string): Promise<string | null> {
     if (IS_MOCK_MODE) {
       setUser(MOCK_USER);
       return null;
     }
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: fullName ? { data: { full_name: fullName } } : undefined,
+    });
     return error ? error.message : null;
   }
 
