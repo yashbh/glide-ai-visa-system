@@ -63,11 +63,11 @@ export function Topbar({ title, subtitle, messages, onDelete, transparent, onMen
         ? "bg-white/70 backdrop-blur-md border-b border-slate-200/50"
         : "border-b border-slate-200 bg-white"
     }`}>
-      {/* Hamburger — mobile only */}
+      {/* Sidebar toggle */}
       {onMenuToggle && (
         <button
           onClick={onMenuToggle}
-          className="w-9 h-9 grid place-items-center rounded-[8px] border-none bg-transparent text-slate-600 text-xl cursor-pointer hover:bg-slate-50 md:hidden"
+          className="w-9 h-9 grid place-items-center rounded-[8px] border-none bg-transparent text-slate-600 text-xl cursor-pointer hover:bg-slate-50"
         >
           <i className="ri-menu-line" />
         </button>
@@ -85,15 +85,6 @@ export function Topbar({ title, subtitle, messages, onDelete, transparent, onMen
         )}
       </span>
       <span className="flex-1" />
-
-      {/* Export button */}
-      <button
-        onClick={exportChat}
-        title="Export chat"
-        className="w-9 h-9 grid place-items-center rounded-[8px] border-none bg-transparent text-slate-600 text-xl cursor-pointer hover:bg-slate-50"
-      >
-        <i className="ri-share-line" />
-      </button>
 
       {/* More menu */}
       <div className="relative" ref={menuRef}>

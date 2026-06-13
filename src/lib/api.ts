@@ -3,6 +3,8 @@ import { supabase } from "./supabase";
 interface ChatRequest {
   conversation_id: string;
   message: string;
+  image_base64?: string;
+  image_type?: string;
 }
 
 interface ChatResponse {
@@ -52,7 +54,8 @@ function getMockResponse(message: string): string {
 
 export async function sendChatMessage(
   request: ChatRequest,
-  onChunk?: (content: string) => void
+  onChunk?: (content: string) => void,
+  onMeta?: (meta: { provider: string; model: string }) => void
 ): Promise<ChatResponse> {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
@@ -75,13 +78,16 @@ export async function sendChatMessage(
     return { reply: "", error: "Not authenticated" };
   }
 
+  const body = JSON.stringify(request);
+  console.log(`[Glide] Sending request: ${(body.length / 1024).toFixed(0)}KB, has image: ${!!request.image_base64}`);
+
   const response = await fetch(`${supabaseUrl}/functions/v1/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify(request),
+    body,
   });
 
   if (!response.ok) {
@@ -115,6 +121,10 @@ export async function sendChatMessage(
 
         try {
           const parsed = JSON.parse(data);
+          if (parsed.meta && onMeta) {
+            onMeta(parsed.meta);
+            continue;
+          }
           if (parsed.content) {
             fullReply += parsed.content;
             if (onChunk) onChunk(parsed.content);

@@ -4,41 +4,45 @@ import type { AttachmentMeta } from "../components/chat/composer";
 import { Message } from "../components/chat/message";
 import { TypingIndicator } from "../components/chat/typing-indicator";
 import { DocPanel } from "../components/chat/doc-panel";
-import { TravelerForm } from "../components/chat/traveler-form";
 import { Topbar } from "../components/layout/topbar";
 import { useChat } from "../hooks/use-chat";
 import { useDocuments } from "../hooks/use-documents";
 import { useAuth } from "../hooks/use-auth";
-import { generateDocument } from "../lib/api";
 
-const DOC_TRIGGER_PATTERNS = [
-  "create a cover letter",
-  "generate a cover letter",
-  "draft a cover letter",
-  "write a cover letter",
-  "make a cover letter",
-  "create cover letter",
-  "generate cover letter",
-  "prepare a cover letter",
-  "create a itinerary",
-  "generate a itinerary",
-  "create an itinerary",
-  "generate an itinerary",
-  "draft an itinerary",
-  "write an itinerary",
-  "make an itinerary",
-  "create itinerary",
-  "plan my itinerary",
-];
+function fileToBase64Raw(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(",")[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
-function detectDocRequest(message: string): { type: "cover_letter" | "itinerary" } | null {
-  const lower = message.toLowerCase();
-  for (const pattern of DOC_TRIGGER_PATTERNS) {
-    if (lower.includes(pattern)) {
-      return { type: lower.includes("itinerary") ? "itinerary" : "cover_letter" };
-    }
-  }
-  return null;
+function compressImageToBase64(file: File, maxSize = 800): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let { width, height } = img;
+      if (width > maxSize || height > maxSize) {
+        const ratio = Math.min(maxSize / width, maxSize / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+      resolve(dataUrl.split(",")[1]);
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
 }
 
 // Extract traveler names from conversation (looks for user messages with names)
@@ -46,10 +50,8 @@ function extractTravelerNames(messages: { role: string; content: string }[]): st
   const names: string[] = [];
   for (const msg of messages) {
     if (msg.role === "user") {
-      // "My name is Yash Bhati" or "I'm Yash"
       const selfMatch = msg.content.match(/(?:my name is|I'm|I am)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i);
       if (selfMatch?.[1] && !names.includes(selfMatch[1])) names.push(selfMatch[1]);
-      // "traveling with Priya" or "with my wife Priya"
       const withMatch = msg.content.match(/(?:with|wife|husband|spouse|child|son|daughter)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/g);
       if (withMatch) {
         for (const m of withMatch) {
@@ -74,17 +76,22 @@ interface ChatPageProps {
   onMenuToggle?: () => void;
 }
 
-export function ChatPage({ conversationId, country, title, isNew, existingTravelers, onConversationCreated, onTravelersAdded, onDelete, onMenuToggle }: ChatPageProps) {
+export function ChatPage({ conversationId, country, title, isNew, existingTravelers, onConversationCreated, onDelete, onMenuToggle }: ChatPageProps) {
   const { user } = useAuth();
-  const { messages, isLoading, historyLoaded, sendMessage } = useChat(conversationId);
   const { uploadDocument, isUploading } = useDocuments(user?.id || "", country);
   const [input, setInput] = useState("");
   const [docPanel, setDocPanel] = useState<{ title: string; body: string } | null>(null);
   const [isDocGenerating, setIsDocGenerating] = useState(false);
   const [travelers, setTravelers] = useState<string[]>(existingTravelers.map((t) => t.name));
-  const [showTravelerForm, setShowTravelerForm] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasSentInitial = useRef(false);
+
+  const handleCoverLetter = useCallback((event: { title: string; content: string; isGenerating: boolean }) => {
+    setDocPanel({ title: event.title, body: event.content });
+    setIsDocGenerating(event.isGenerating);
+  }, []);
+
+  const { messages, isLoading, historyLoaded, sendMessage } = useChat(conversationId, handleCoverLetter);
 
   // Keep travelers in sync with parent
   useEffect(() => {
@@ -102,43 +109,19 @@ export function ChatPage({ conversationId, country, title, isNew, existingTravel
     }
   }, [messages, isLoading]);
 
-  // Show traveler form for new conversations (if no existing travelers), or start chat for existing ones
+  // Send initial greeting for new conversations
   useEffect(() => {
     if (!historyLoaded || hasSentInitial.current) return;
     if (isNew && messages.length === 0) {
-      if (existingTravelers.length > 0) {
-        // Already have travelers registered — skip form, go straight to chat
-        setShowTravelerForm(true);
-      } else {
-        setShowTravelerForm(true);
-      }
-    } else if (!isNew) {
-      // For existing conversations, use existing travelers from parent
-      if (existingTravelers.length === 0) {
-        const names = extractTravelerNames(messages);
-        if (names.length > 0) setTravelers(names);
-      }
+      hasSentInitial.current = true;
+      sendMessage(`Hi! I'm interested in traveling to ${country}.`).then(() => {
+        onConversationCreated();
+      });
+    } else if (!isNew && existingTravelers.length === 0) {
+      const names = extractTravelerNames(messages);
+      if (names.length > 0) setTravelers(names);
     }
   }, [historyLoaded, isNew, messages.length, existingTravelers]);
-
-  const handleTravelerSubmit = useCallback(async (travelerList: { name: string; relationship: string }[]) => {
-    setShowTravelerForm(false);
-    const names = travelerList.map((t) => t.name.trim());
-    setTravelers(names);
-    hasSentInitial.current = true;
-
-    // Add new travelers to the global list (saves to Supabase via parent)
-    await onTravelersAdded(travelerList);
-
-    // Start conversation with traveler info
-    const travelerInfo = travelerList.length === 1
-      ? `Hi! My name is ${travelerList[0].name} and I'm interested in traveling to ${country}.`
-      : `Hi! I'm ${travelerList[0].name} and I'm traveling to ${country} with ${travelerList.slice(1).map((t) => `${t.name} (${t.relationship})`).join(", ")}.`;
-
-    sendMessage(travelerInfo).then(() => {
-      onConversationCreated();
-    });
-  }, [user, conversationId, country, sendMessage, onConversationCreated]);
 
   const handleSend = useCallback(async (attachment?: AttachmentMeta) => {
     const trimmed = input.trim();
@@ -164,49 +147,36 @@ export function ChatPage({ conversationId, country, title, isNew, existingTravel
         const fileMsg = trimmed
           ? `${trimmed}\n\n[Attached: ${docType} (${travelerName}'s) — ${doc.file_type}, ${sizeKB}KB]`
           : `[Attached: ${docType} (${travelerName}'s) — ${doc.file_type}, ${sizeKB}KB]`;
-        sendMessage(fileMsg);
-      }
-      return;
-    }
 
-    // Check if user is asking for a document generation
-    const docRequest = detectDocRequest(trimmed);
-    if (docRequest) {
-      await sendMessage(trimmed);
+        console.log(`[Glide] File type: "${file.type}", name: "${file.name}", size: ${file.size}`);
 
-      const conversationContext = messages
-        .filter((m) => m.role !== "system")
-        .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
-        .slice(-10)
-        .join("\n");
+        const isImage = file.type.startsWith("image/") || file.name.match(/\.(jpg|jpeg|png)$/i);
+        const isPdf = file.type === "application/pdf" || file.name.endsWith(".pdf");
 
-      const docTitle = docRequest.type === "cover_letter"
-        ? `${country.charAt(0).toUpperCase() + country.slice(1)} Cover Letter`
-        : `${country.charAt(0).toUpperCase() + country.slice(1)} Travel Itinerary`;
-
-      setDocPanel({ title: docTitle, body: "" });
-      setIsDocGenerating(true);
-
-      const result = await generateDocument({
-        doc_type: docRequest.type,
-        country,
-        context: conversationContext,
-      });
-
-      setIsDocGenerating(false);
-
-      if (result.error) {
-        setDocPanel(null);
-        sendMessage(`Sorry, I couldn't generate the document: ${result.error}`);
-      } else {
-        setDocPanel({ title: result.title, body: result.document });
+        if (isImage) {
+          try {
+            const base64 = await compressImageToBase64(file);
+            console.log(`[Glide] Image compressed: ${(base64.length / 1024).toFixed(0)}KB base64`);
+            sendMessage(fileMsg, base64, "image/jpeg");
+          } catch (err) {
+            console.error("[Glide] Image compression failed:", err);
+            sendMessage(fileMsg);
+          }
+        } else if (isPdf) {
+          // Send PDF as base64 for OCR extraction
+          const base64 = await fileToBase64Raw(file);
+          console.log(`[Glide] PDF base64: ${(base64.length / 1024).toFixed(0)}KB`);
+          sendMessage(fileMsg, base64, "application/pdf");
+        } else {
+          sendMessage(fileMsg);
+        }
       }
       return;
     }
 
     // Normal message
     sendMessage(trimmed);
-  }, [input, sendMessage, messages, country, uploadDocument, conversationId]);
+  }, [input, sendMessage, uploadDocument, conversationId]);
 
   const handleDocApprove = useCallback(async (editedContent: string) => {
     if (!docPanel || !user) return;
@@ -246,10 +216,6 @@ export function ChatPage({ conversationId, country, title, isNew, existingTravel
         <div className="text-slate-400 text-sm">Loading conversation...</div>
       </div>
     );
-  }
-
-  if (showTravelerForm) {
-    return <TravelerForm country={country} existingTravelers={existingTravelers} onSubmit={handleTravelerSubmit} />;
   }
 
   return (

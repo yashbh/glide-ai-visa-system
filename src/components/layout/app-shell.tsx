@@ -16,7 +16,8 @@ export function AppShell() {
   const [view, setView] = useState("home");
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [chatCountry, setChatCountry] = useState<string>("germany");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const { conversations, refresh: refreshConversations, deleteConversation } = useConversations();
   const { travelers, addTraveler, updateTraveler, deleteTraveler } = useTravelers(user?.id || "");
 
@@ -32,7 +33,7 @@ export function AppShell() {
     const country = title.toLowerCase().includes("france") ? "france" : "germany";
     setChatCountry(country);
     setView("chat");
-    setSidebarOpen(false);
+    setMobileMenuOpen(false);
   }, []);
 
   function navigate(v: string) {
@@ -40,7 +41,17 @@ export function AppShell() {
       setActiveConversationId(null);
     }
     setView(v);
-    setSidebarOpen(false);
+    setMobileMenuOpen(false);
+  }
+
+  function handleMenuToggle() {
+    // On mobile: open overlay. On desktop: toggle sidebar collapse.
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      setMobileMenuOpen(true);
+    } else {
+      setDesktopSidebarOpen((prev) => !prev);
+    }
   }
 
   const showTopbar = view === "home";
@@ -57,18 +68,18 @@ export function AppShell() {
 
   return (
     <div className="h-screen flex bg-white text-slate-950 overflow-hidden">
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
+      {/* Mobile sidebar overlay backdrop */}
+      {mobileMenuOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-40 md:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
-      {/* Sidebar — hidden on mobile, shown on desktop */}
+      {/* Mobile sidebar (overlay) */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-[272px] transform transition-transform duration-200 ease-out md:relative md:translate-x-0 md:z-auto
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
+        fixed inset-y-0 left-0 z-50 w-[272px] transform transition-transform duration-200 ease-out md:hidden
+        ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
       `}>
         <Sidebar
           currentView={view}
@@ -83,13 +94,32 @@ export function AppShell() {
               setView("home");
             }
           }}
-          onClose={() => setSidebarOpen(false)}
+          onClose={() => setMobileMenuOpen(false)}
+        />
+      </div>
+
+      {/* Desktop sidebar (inline, collapsible) */}
+      <div className={`hidden md:block transition-all duration-200 ease-out overflow-hidden ${desktopSidebarOpen ? "w-[272px]" : "w-0"}`}>
+        <Sidebar
+          currentView={view}
+          activeConversationId={activeConversationId}
+          conversations={conversations}
+          onNavigate={navigate}
+          onOpenConversation={openConversation}
+          onDeleteConversation={async (id) => {
+            await deleteConversation(id);
+            if (activeConversationId === id) {
+              setActiveConversationId(null);
+              setView("home");
+            }
+          }}
+          onClose={() => setDesktopSidebarOpen(false)}
         />
       </div>
 
       {/* Main content */}
       <main className="flex-1 flex flex-col min-w-0 min-h-0 md:m-2 md:ml-0 md:rounded-2xl bg-slate-50 md:border md:border-slate-200 overflow-hidden">
-        {showTopbar && <Topbar title="New chat" onMenuToggle={() => setSidebarOpen(true)} />}
+        {showTopbar && <Topbar title="New chat" onMenuToggle={handleMenuToggle} />}
         {view === "home" && <ChatHomePage onStartChat={startNewChat} />}
         {view === "chat" && activeConversationId && (
           <ChatPage
@@ -106,17 +136,17 @@ export function AppShell() {
               }
             }}
             onDelete={handleDeleteActive}
-            onMenuToggle={() => setSidebarOpen(true)}
+            onMenuToggle={handleMenuToggle}
           />
         )}
-        {view === "documents" && <DocumentsPage onMenuToggle={() => setSidebarOpen(true)} />}
+        {view === "documents" && <DocumentsPage onMenuToggle={handleMenuToggle} />}
         {view === "travelers" && (
           <TravelersPage
             travelers={travelers}
             onAdd={addTraveler}
             onUpdate={updateTraveler}
             onDelete={deleteTraveler}
-            onMenuToggle={() => setSidebarOpen(true)}
+            onMenuToggle={handleMenuToggle}
           />
         )}
         {view === "dashboard" && <DashboardPage />}

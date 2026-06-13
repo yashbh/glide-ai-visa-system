@@ -28,17 +28,17 @@ export function Sidebar({ currentView, activeConversationId, conversations, onNa
       {/* Top: logo + close (mobile) */}
       <div className="flex items-center justify-between px-1.5">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-[10px] bg-blue-500 grid place-items-center text-white font-bold text-lg shadow-regular-sm">
-            G
-          </div>
+          <img src="/glide-logo.svg" alt="Glide" className="w-9 h-9 rounded-[10px] shadow-regular-sm" />
           <span className="font-display font-semibold text-lg">Glide</span>
         </div>
-        <button
-          onClick={onClose}
-          className="text-slate-400 text-[22px] bg-transparent border-none cursor-pointer grid place-items-center md:hidden"
-        >
-          <i className="ri-close-line" />
-        </button>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="text-slate-400 text-[22px] bg-transparent border-none cursor-pointer grid place-items-center"
+          >
+            <i className="ri-side-bar-line" />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
