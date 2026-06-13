@@ -40,7 +40,7 @@ export function LoginForm() {
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Yash Bhati"
+                placeholder="John Doe"
                 required
                 className="w-full h-10 pl-10 pr-3 rounded-[10px] border border-slate-200 bg-white text-sm text-slate-950 placeholder:text-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition"
               />
